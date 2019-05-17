@@ -1,0 +1,7 @@
+create libawsiotall.a
+addlib ./libawsiot.a
+addlib ./aws-iot-device-sdk-embedded-C/external_libs/mbedTLS/library/libmbedtls.a 
+addlib ./aws-iot-device-sdk-embedded-C/external_libs/mbedTLS/library/libmbedcrypto.a
+addlib ./aws-iot-device-sdk-embedded-C/external_libs/mbedTLS/library/libmbedx509.a
+save
+end
