@@ -72,11 +72,11 @@ MAKE_APP_CMD = $(CC) $(APP_SRC_FILES) $(COMPILER_FLAGS) -o $(APP_NAME) $(LD_FLAG
 default: all
 
 aws-iot-device-sdk-embedded-C:
-	git clone -b v3.0.1 https://github.com/aws/aws-iot-device-sdk-embedded-C
+	@git clone -b v3.0.1 https://github.com/aws/aws-iot-device-sdk-embedded-C
 	rm -rf $(APP_DIR)/aws-iot-device-sdk-embedded-C/external_libs/CppUTest
-	git clone -b v3.8 https://github.com/cpputest/cpputest $(APP_DIR)/aws-iot-device-sdk-embedded-C/external_libs/CppUTest
+	@git clone -b v3.8 https://github.com/cpputest/cpputest $(APP_DIR)/aws-iot-device-sdk-embedded-C/external_libs/CppUTest
 	rm -rf $(APP_DIR)/aws-iot-device-sdk-embedded-C/external_libs/mbedTLS
-	git clone -b mbedtls-2.16.1 https://github.com/ARMmbed/mbedtls $(APP_DIR)/aws-iot-device-sdk-embedded-C/external_libs/mbedTLS
+	@git clone -b mbedtls-2.16.1 https://github.com/ARMmbed/mbedtls $(APP_DIR)/aws-iot-device-sdk-embedded-C/external_libs/mbedTLS
 
 vendor_clean:
 	rm -rf $(APP_DIR)/aws-iot-device-sdk-embedded-C
