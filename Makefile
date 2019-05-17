@@ -86,7 +86,7 @@ lib$(LIB_NAME)all.a: aws-iot-device-sdk-embedded-C
 	$(DEBUG)$(MAKE_LIB_CMD)
 	$(POST_MAKE_LIB_CMD)
 
-$(APP_NAME): lib$(LIB_NAME)all.a
+$(APP_NAME): lib$(LIB_NAME)all.a $(APP_SRC_FILES)
 	$(PRE_MAKE_APP_CMD)
 	@echo $(DEBUG)$(MAKE_APP_CMD)
 	$(DEBUG)$(MAKE_APP_CMD)
