@@ -96,6 +96,4 @@ clean:
 	rm -f *.o
 	rm -f lib$(SDK_NAME).a
 	rm -f $(APP_NAME)
-	$(MBED_TLS_MAKE_CMD) clean
-
-
+	-$(MBED_TLS_MAKE_CMD) clean
