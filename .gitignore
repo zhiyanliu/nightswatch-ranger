@@ -1,5 +1,8 @@
 dmpagent
 certs/*
+!certs/README
 aws-iot-device-sdk-embedded-C
 *.o
 *.a
+.idea/
+lib_obj/
