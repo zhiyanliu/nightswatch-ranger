@@ -4,14 +4,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include <limits.h>
-#include <string.h>
 
 #include "aws_iot_error.h"
 #include "aws_iot_log.h"
 
 #include "client.h"
+
 
 int main(int argc, char **argv) {
     p_dmp_dev_client client = NULL;
@@ -32,7 +30,7 @@ int main(int argc, char **argv) {
         return rc;
     }
 
-    IOT_INFO("connecting to AWS IoT Core %s:%d...", AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
+    IOT_INFO("connecting to AWS IoT Core %s:%d", AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
 
     rc = dmp_dev_client_connect(client, AWS_IOT_MQTT_CLIENT_ID);
     if(SUCCESS != rc) {
@@ -40,6 +38,35 @@ int main(int argc, char **argv) {
 
         dmp_dev_client_free(client);
         return rc;
+    }
+
+    IOT_INFO("subscribe to job topics")
+
+    rc = dmp_dev_client_job_listen(client, AWS_IOT_MY_THING_NAME);
+    if(SUCCESS != rc) {
+        IOT_ERROR("dmp_dev_client_job_listen returned error: %d", rc);
+
+        dmp_dev_client_free(client);
+        return rc;
+    }
+
+    IOT_INFO("ask a job to process")
+
+    rc = dmp_dev_client_job_ask(client, AWS_IOT_MY_THING_NAME);
+    if(SUCCESS != rc) {
+        IOT_ERROR("dmp_dev_client_job_ask returned error: %d", rc);
+
+        dmp_dev_client_free(client);
+        return rc;
+    }
+
+    IOT_INFO("start job mqtt message handle loop")
+
+    rc =dmp_dev_client_job_loop(client);
+    if(SUCCESS != rc) {
+        IOT_ERROR("dmp_dev_client_job_loop returned error: %d", rc);
+
+        dmp_dev_client_free(client);
     }
 
     return rc;
