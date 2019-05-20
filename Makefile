@@ -64,7 +64,7 @@ APP_SRC_FILES += $(shell find $(APP_DIR) -name "*.c" -not -path "./aws-iot-devic
 EXTERNAL_LIBS += -L $(TLS_LIB_DIR)
 AWSIOT_SDK += -L $(APP_DIR)
 LD_FLAG += -Wl,-rpath,$(TLS_LIB_DIR)
-LD_FLAG += -ldl -lpthread -lmbedx509 -lmbedcrypto -lmbedtls -l$(SDK_NAME)
+LD_FLAG += -ldl -lpthread -l$(SDK_NAME) -lmbedtls -lmbedx509 -lmbedcrypto
 
 MAKE_APP_CMD = $(CC) $(APP_SRC_FILES) $(COMPILER_FLAGS) -o $(APP_NAME) $(LD_FLAG) $(EXTERNAL_LIBS) $(AWSIOT_SDK) $(INCLUDE_ALL_DIRS)
 
@@ -87,7 +87,6 @@ lib$(SDK_NAME).a: aws-iot-device-sdk-embedded-C
 
 $(APP_NAME): lib$(SDK_NAME).a $(APP_SRC_FILES)
 	$(PRE_MAKE_APP_CMD)
-	@echo $(MAKE_APP_CMD)
 	$(DEBUG)$(MAKE_APP_CMD)
 	$(POST_MAKE_APP_CMD)
 
