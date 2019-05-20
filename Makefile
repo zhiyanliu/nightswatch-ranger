@@ -7,7 +7,7 @@ CC = gcc
 #remove @ for no make command prints
 DEBUG = @
 
-LIB_NAME = awsiot
+SDK_NAME = awsiot
 APP_NAME = dmpagent
 
 APP_DIR = .
@@ -55,19 +55,18 @@ COMPILER_FLAGS += $(LOG_FLAGS)
 
 MBED_TLS_MAKE_CMD = $(MAKE) -C $(MBEDTLS_DIR)
 
-PRE_MAKE_LIB_CMD = $(MBED_TLS_MAKE_CMD)
-MAKE_LIB_CMD = $(CC) $(IOT_SRC_FILES) $(COMPILER_FLAGS) -c $(INCLUDE_ALL_DIRS)
-POST_MAKE_LIB_CMD += ar cr lib$(LIB_NAME).a *.o &&
-POST_MAKE_LIB_CMD += ar -M < libawsiotall.mri
+PRE_MAKE_SDK_CMD = $(MBED_TLS_MAKE_CMD)
+MAKE_SDK_CMD = $(CC) $(IOT_SRC_FILES) $(COMPILER_FLAGS) -c $(INCLUDE_ALL_DIRS)
+POST_MAKE_SDK_CMD = ar cr lib$(SDK_NAME).a *.o
 
-APP_SRC_FILES += $(shell find $(APP_DIR)/ -name "*.c" -not -path "./aws-iot-device-sdk-embedded-C/*")
+APP_SRC_FILES += $(shell find $(APP_DIR) -name "*.c" -not -path "./aws-iot-device-sdk-embedded-C/*")
 
 EXTERNAL_LIBS += -L $(TLS_LIB_DIR)
-AWSIOT_LIB += -L $(APP_DIR)
+AWSIOT_SDK += -L $(APP_DIR)
 LD_FLAG += -Wl,-rpath,$(TLS_LIB_DIR)
-LD_FLAG += -ldl -lpthread -l$(LIB_NAME)all
+LD_FLAG += -ldl -lpthread -lmbedx509 -lmbedcrypto -lmbedtls -l$(SDK_NAME)
 
-MAKE_APP_CMD = $(CC) $(APP_SRC_FILES) $(COMPILER_FLAGS) -o $(APP_NAME) $(LD_FLAG) $(EXTERNAL_LIBS) $(AWSIOT_LIB) $(INCLUDE_ALL_DIRS)
+MAKE_APP_CMD = $(CC) $(APP_SRC_FILES) $(COMPILER_FLAGS) -o $(APP_NAME) $(LD_FLAG) $(EXTERNAL_LIBS) $(AWSIOT_SDK) $(INCLUDE_ALL_DIRS)
 
 default: all
 
@@ -81,14 +80,14 @@ aws-iot-device-sdk-embedded-C:
 vendor_clean:
 	rm -rf $(APP_DIR)/aws-iot-device-sdk-embedded-C
 
-lib$(LIB_NAME)all.a: aws-iot-device-sdk-embedded-C
-	$(PRE_MAKE_LIB_CMD)
-	$(DEBUG)$(MAKE_LIB_CMD)
-	$(POST_MAKE_LIB_CMD)
+lib$(SDK_NAME).a: aws-iot-device-sdk-embedded-C
+	$(PRE_MAKE_SDK_CMD)
+	$(DEBUG)$(MAKE_SDK_CMD)
+	$(POST_MAKE_SDK_CMD)
 
-$(APP_NAME): lib$(LIB_NAME)all.a $(APP_SRC_FILES)
+$(APP_NAME): lib$(SDK_NAME).a $(APP_SRC_FILES)
 	$(PRE_MAKE_APP_CMD)
-	@echo $(DEBUG)$(MAKE_APP_CMD)
+	@echo $(MAKE_APP_CMD)
 	$(DEBUG)$(MAKE_APP_CMD)
 	$(POST_MAKE_APP_CMD)
 
@@ -96,7 +95,7 @@ all: $(APP_NAME)
 
 clean:
 	rm -f *.o
-	rm -f lib$(LIB_NAME).a lib$(LIB_NAME)all.a
+	rm -f lib$(SDK_NAME).a
 	rm -f $(APP_NAME)
 	$(MBED_TLS_MAKE_CMD) clean
 
