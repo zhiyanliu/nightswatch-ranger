@@ -41,7 +41,6 @@ Overall you need to config DMP agent from below two sides:
 1. Setup customer specific device client parameter configuration.
 2. Place certificate, public and private key files to project home directory.
 
-
 ### Place certificate, public and private key files
 
 The client need to use valid certificate, public and private key files to establish authorized communication between the device client and AWS IoT Core service.
