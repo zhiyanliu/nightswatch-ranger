@@ -17,17 +17,22 @@
 
 
 p_dmp_dev_client dmp_dev_client_alloc() {
-    p_dmp_dev_client client = (dmp_dev_client*)malloc(sizeof(dmp_dev_client));
+    p_dmp_dev_client client = (p_dmp_dev_client)malloc(sizeof(dmp_dev_client));
     if (NULL != client)
-        memset(client , 0, sizeof(dmp_dev_client));
+        memset(client, 0, sizeof(dmp_dev_client));
     return client;
 }
 
-IoT_Error_t dmp_dev_client_init(p_dmp_dev_client client, char *root_ca_file, char *client_ca_file,
-        char *key_file, char *host_url, uint16_t port) {
-//    int32_t i = 0;
+IoT_Error_t dmp_dev_client_init(p_dmp_dev_client client, char *thing_name,
+        char *root_ca_file, char *client_ca_file, char *key_file, char *host_url, uint16_t port) {
+
     if (NULL == client)
         return FAILURE;
+
+    if (NULL == thing_name)
+        return FAILURE;
+
+    client->thing_name = thing_name; // outside keep the buffer
 
     getcwd(client->work_dir_path, PATH_MAX + 1);
 
@@ -50,7 +55,7 @@ IoT_Error_t dmp_dev_client_init(p_dmp_dev_client client, char *root_ca_file, cha
 
     memcpy(client->mqtt_init_params, &iotClientInitParamsDefault, sizeof(IoT_Client_Init_Params));
 
-    client->mqtt_init_params->enableAutoReconnect = false; // We enable this later below
+    client->mqtt_init_params->enableAutoReconnect = false; // enable this later below
     client->mqtt_init_params->pHostURL = host_url; // outside keep the buffer
     client->mqtt_init_params->port = port;
     client->mqtt_init_params->pRootCALocation = client->root_ca_file_path;

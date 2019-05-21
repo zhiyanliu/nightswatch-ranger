@@ -13,8 +13,8 @@
 // Get from console
 #define AWS_IOT_MQTT_HOST            "azffej9vrka1f-ats.iot.ap-northeast-1.amazonaws.com" ///< Customer specific MQTT HOST. The same will be used for Thing Shadow
 #define AWS_IOT_MQTT_PORT            443 ///< default port for MQTT/S
-#define AWS_IOT_MQTT_CLIENT_ID       "c-sdk-client-id" ///< MQTT client ID should be unique for every device
-#define AWS_IOT_MY_THING_NAME        "AWS-IoT-C-SDK" ///< Thing Name of the Shadow this device is associated with
+#define AWS_IOT_MQTT_CLIENT_ID       "irootech-dmp-dev1" ///< MQTT client ID should be unique for every device
+#define AWS_IOT_MY_THING_NAME        "irootech-dmp-dev1" ///< Thing Name of the Shadow this device is associated with
 #define AWS_IOT_ROOT_CA_FILENAME     "root-ca.crt" ///< Root CA file name
 #define AWS_IOT_CERTIFICATE_FILENAME "cert.pem" ///< device signed certificate file name
 #define AWS_IOT_PRIVATE_KEY_FILENAME "privkey.pem" ///< Device private key filename
@@ -41,11 +41,13 @@
 #define AWS_IOT_MQTT_MIN_RECONNECT_WAIT_INTERVAL 1000 ///< Minimum time before the First reconnect attempt is made as part of the exponential back-off algorithm
 #define AWS_IOT_MQTT_MAX_RECONNECT_WAIT_INTERVAL 128000 ///< Maximum time interval after which exponential back-off will stop attempting to reconnect.
 
+// Job and thing Shadow specific configs
+#define MAX_JSON_TOKEN_EXPECTED 120 ///< These are the max tokens that is expected to be in the Shadow JSON document. Include the metadata that gets published
+
 // Thing Shadow specific configs
 #define SHADOW_MAX_SIZE_OF_RX_BUFFER 512 ///< Maximum size of the SHADOW buffer to store the received Shadow message
 #define MAX_ACKS_TO_COMEIN_AT_ANY_GIVEN_TIME 10 ///< At Any given time we will wait for this many responses. This will correlate to the rate at which the shadow actions are requested
 #define MAX_THINGNAME_HANDLED_AT_ANY_GIVEN_TIME 10 ///< We could perform shadow action on any thing Name and this is maximum Thing Names we can act on at any given time
-#define MAX_JSON_TOKEN_EXPECTED 120 ///< These are the max tokens that is expected to be in the Shadow JSON document. Include the metadata that gets published
 #define MAX_SHADOW_TOPIC_LENGTH_WITHOUT_THINGNAME 60 ///< All shadow actions have to be published or subscribed to a topic which is of the format $aws/things/{thingName}/shadow/update/accepted. This refers to the size of the topic without the Thing Name
 #define MAX_SHADOW_TOPIC_LENGTH_BYTES MAX_SHADOW_TOPIC_LENGTH_WITHOUT_THINGNAME + MAX_SIZE_OF_THING_NAME ///< This size includes the length of topic with Thing Name
 
