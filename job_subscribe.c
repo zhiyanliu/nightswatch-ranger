@@ -159,6 +159,8 @@ void _next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint16_t to
 
     // TODO(zhiyan): dispatch job
 
+    job_parser_job_free(pj);
+
     return;
 }
 
