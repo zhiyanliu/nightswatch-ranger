@@ -119,23 +119,22 @@ void _next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint16_t to
 
     switch(prc) {
         case JOB_EXECUTION_EMPTY:
-            IOT_WARN("reject job without execution property");
-            job_status = "REJECTED";
-            job_status_details = "{\"failureDetail\":\"Job execution property not found.\"}";
+            IOT_WARN("invalid job without execution property, skip");
+            goto ret;
         case JOB_ID_NOT_FOUND_ERROR:
-            job_status = "FAILED";
-            job_status_details = "{\"failureDetail\":\"Job id not found.\"}";
+            IOT_WARN("invalid job without job id, skip");
+            goto ret;
         case JOB_ID_INVALID_ERROR:
-            job_status = "FAILED";
-            job_status_details = "{\"failureDetail\":\"Job id is invalid.\"}";
+            IOT_WARN("invalid job id, skip");
+            goto ret;
         case JOB_DOCUMENT_NOT_FOUND_ERROR:
-            job_status = "FAILED";
+            job_status = "REJECTED";
             job_status_details = "{\"failureDetail\":\"Job document not found.\"}";
         case JOB_STATUS_NOT_FOUND_ERROR:
-            job_status = "FAILED";
+            job_status = "REJECTED";
             job_status_details = "{\"failureDetail\":\"Job status not found.\"}";
         case JOB_STATUS_INVALID_ERROR:
-            job_status = "FAILED";
+            job_status = "REJECTED";
             job_status_details = "{\"failureDetail\":\"Job status is invalid.\"}";
         case FAILURE:
             job_status = "FAILED";
@@ -151,14 +150,15 @@ void _next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint16_t to
         IOT_ERROR("dmp_dev_client_job_update returned error: %d", rc);
         if (dispatch)
             IOT_ERROR("Do NOT dispatch job, due to failed to update job status");
-        return;
+        goto ret;
     }
 
     if (!dispatch)
-        return;
+        goto ret;
 
     // TODO(zhiyan): dispatch job
 
+ret:
     job_parser_job_free(pj);
 
     return;

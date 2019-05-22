@@ -56,21 +56,21 @@ Job_Parse_Error_t job_parser_parse(void *payload, size_t payload_l, ppjob ppj,
     if(_token_c < 0) {
         IOT_ERROR("failed to parse job json: %d", _token_c);
         prc = JOB_PARSE_FAILURE;
-        goto error;
+        goto ret;
     }
 
     /* assume the top-level element is an object */
     if(_token_c < 1 || _json_tok_v[0].type != JSMN_OBJECT) {
         IOT_ERROR("invalid job json, top level is not an object");
         prc = JOB_PARSE_FAILURE;
-        goto error;
+        goto ret;
     }
 
     tok_execution = findToken("execution", payload, _json_tok_v);
     if (NULL == tok_execution) {
         IOT_WARN("job execution property not found, nothing to do");
         prc = JOB_EXECUTION_EMPTY;
-        goto error;
+        goto ret;
     }
 
     IOT_DEBUG("job execution: %.*s", tok_execution->end - tok_execution->start,
@@ -80,14 +80,14 @@ Job_Parse_Error_t job_parser_parse(void *payload, size_t payload_l, ppjob ppj,
     if (NULL == tok) {
         IOT_ERROR("invalid job json, job id not found");
         prc = JOB_ID_NOT_FOUND_ERROR;
-        goto error;
+        goto ret;
     }
 
     rc = parseStringValue((*ppj)->job_id, MAX_SIZE_OF_JOB_ID + 1, payload, tok);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to parse job id: %d", rc);
         prc = JOB_ID_INVALID_ERROR;
-        goto error;
+        goto ret;
     }
 
     IOT_DEBUG("job id: %s", (*ppj)->job_id);
@@ -97,14 +97,14 @@ Job_Parse_Error_t job_parser_parse(void *payload, size_t payload_l, ppjob ppj,
         if (NULL == tok) {
             IOT_ERROR("invalid job json, job status not found");
             prc = JOB_STATUS_NOT_FOUND_ERROR;
-            goto error;
+            goto ret;
         }
 
         rc = parseStringValue(job_status_cur, job_status_cur_l, payload, tok);
         if (SUCCESS != rc) {
             IOT_ERROR("failed to parse job status: %d", rc);
             prc = JOB_STATUS_INVALID_ERROR;
-            goto error;
+            goto ret;
         }
 
         IOT_DEBUG("job status: %s", job_status_cur);
@@ -114,7 +114,7 @@ Job_Parse_Error_t job_parser_parse(void *payload, size_t payload_l, ppjob ppj,
     if (NULL == tok) {
         IOT_ERROR("invalid job json, job document not found");
         prc = JOB_DOCUMENT_NOT_FOUND_ERROR;
-        goto error;
+        goto ret;
     }
 
     (*ppj)->job_doc = (char*)payload + tok->start;
@@ -123,11 +123,6 @@ Job_Parse_Error_t job_parser_parse(void *payload, size_t payload_l, ppjob ppj,
     IOT_DEBUG("job document: %.*s", (int)(*ppj)->job_doc_l, (*ppj)->job_doc);
 
     prc = JOB_PARSE_SUCCESS;
-    goto ret;
-
-error:
-    free(*ppj);
-    *ppj = NULL;
 
 ret:
     return prc;
