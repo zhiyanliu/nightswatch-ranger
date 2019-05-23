@@ -4,18 +4,30 @@ This is the repository of the AWS RP project for iRootech DMP agent running in t
 
 ### Setup Environment
 
-As a C lang project, it needs Build tool and GCC toolchain to compile and link target. To easy development, `Makefile` supports Mac and Ubuntu platforms, you can coding and debug on local MBP, and integration on remote Ubuntu/Linux host.
+As a C lang project, it needs Build tool and GCC toolchain to compile and link target. To easy development, `Makefile` currently supports Mac, Ubuntu and QuecOpen Linux platforms, you can coding and debug on local MBP, and integration on remote Ubuntu/Linux host, even with
 
 - `Mac platform`: ``xcode-select --install``
 
 - `Ubuntu platform`: ``sudo apt install build-essential``
 
+- `QuecOpen Linux`: execute follow commands, and read offical document `Quectel_EC2x&AG35-QuecOpen`.
+
+```
+tar jxf EC20CEFAGR06A05M4G_OCPU_SDK.tar.bz2
+cd ql-ol-sdk
+source ql-ol-crosstool/ql-ol-crosstool-env-init # execute this for each new session, environment varibables exported.
+```
+
+>> **Note:**
+>>
+>> After install QuecOpen Linux SDK, you can use use `arm-oe-linux-gnueabi-gcc -v` command to verify if cross complie toolchain is ready to work. However if you meet `ql-ol-crosstool/sysroots/x86_64-oesdk-linux/usr/bin/arm-oe-linux-gnueabi/arm-oe-linux-gnueabi-gcc: No such file or directory` issues, read troubleshooting section to resolve.
+
 ### Basic
 
 1. `git clone ssh://git-codecommit.ap-northeast-1.amazonaws.com/v1/repos/irootech-dmp-rp-agent`
-2. Change current directory to project directory.
-3. ``make``
-4. Binary `dmpagent` is built out to current directory if build process is executed successfully.
+2. `cd irootech-dmp-rp-agent`
+3. ``source <QuecOpen Linux SDK>/ql-ol-crosstool/ql-ol-crosstool-env-init``, do this for cross compiling for QuecOpen Linux platform only.
+4. ``make``, and inary `dmpagent` is built out to current directory if build process is executed successfully.
 
 #### Advanced
 
@@ -69,3 +81,13 @@ The complete configurations are listed in `aws_iot_config.h` file. You need to t
 - `AWS_IOT_PRIVATE_KEY_FILENAME`: device private key file name, equals to the real file name you placed in `certs` directory.
 
 Other specific configurations are listed as well for different service, e.g. MQTT PubSub, Thing Shadow. You might follow the inline comments and the directive name of the configuration is straightforward.
+
+## Troubleshooting
+
+### arm-oe-linux-gnueabi-gcc: No such file or directory
+
+When command `arm-oe-linux-gnueabi-gcc -v` failed and output `ql-ol-crosstool/sysroots/x86_64-oesdk-linux/usr/bin/arm-oe-linux-gnueabi/arm-oe-linux-gnueabi-gcc: No such file or directory`, it might caused by shared object dependencies missing.
+
+Run `ldd ql-ol-crosstool/sysroots/x86_64-oesdk-linux/usr/bin/arm-oe-linux-gnueabi/arm-oe-linux-gnueabi-gcc`, to find out if any shared object dependencies is missing.
+
+For example, libraray `/home/eve/Eve_Linux_Server/Qualcomm/MDM9x07/OpenLinux/LE.1.0.c3/Release/EC20CEFAG/R06A05/apps_proc/oe-core/build/tmp-glibc/deploy/sdk/ql-ol-sdk/ql-ol-crosstool/sysroots/x86_64-oesdk-linux/lib/ld-linux-x86-64.so.2` is not existing really in my development host, even directory `/home/eve` is missing. The solution is simple to create a link file at `/home/eve/Eve_Linux_Server/Qualcomm/MDM9x07/OpenLinux/LE.1.0.c3/Release/EC20CEFAG/R06A05/apps_proc/oe-core/build/tmp-glibc/deploy/sdk` and point to valid QuecOpen Linux SDK directory.
