@@ -20,12 +20,12 @@ typedef int (*executor_t)(pjob_dispatch_param pparam);
 
 typedef struct {
     const char *op_type; // outside keeps the buffer
-    size_t op_type_l;
+    size_t op_type_l; // op_type buffer size, include NULL at last
     executor_t executor;
 } executor_record, *pexecutor_record;
 
 typedef struct {
-    pexecutor_record executor_v;
+    pexecutor_record *executor_v; // pexecutor_record list
     size_t executor_v_l;
 } job_dispatcher, *pjob_dispatcher;
 
@@ -35,7 +35,7 @@ struct job_dispatch_param {
     pjob_dispatcher pdispatcher;
     pjob pj;
     char *job_status_recv;
-    size_t job_status_recv_l;
+    size_t job_status_recv_l; // job_status_recv buffer size, include NULL at last
 };
 
 pjob_dispatcher job_dispatcher_reg_executor(pjob_dispatcher pdispatcher,

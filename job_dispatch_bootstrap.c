@@ -20,7 +20,7 @@ job_dispatcher job_dispatcher_default = {NULL, 0};
 
 pjob_dispatcher job_dispatcher_bootstrap() {
     job_dispatcher_reg_executor(&job_dispatcher_default,
-            JOB_OP_OTA_SYS_PKG_STR, strlen(JOB_OP_OTA_SYS_PKG_STR), op_ota_sys_pkg_entry);
+            JOB_OP_OTA_SYS_PKG_STR, strlen(JOB_OP_OTA_SYS_PKG_STR) + 1, op_ota_sys_pkg_entry);
 
     return &job_dispatcher_default;
 }

@@ -170,7 +170,8 @@ void _next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint16_t to
         }
 
         if (NULL != job_status) {
-            rc = dmp_dev_client_job_update(pparam->pclient, pj, job_status, job_status_details);
+            rc = dmp_dev_client_job_update(&pparam->pclient->c, pparam->pclient->thing_name,
+                    pj, job_status, job_status_details);
             if (SUCCESS != rc)
                 IOT_ERROR("dmp_dev_client_job_update returned error: %d", rc);
         }
@@ -192,29 +193,29 @@ void _next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint16_t to
             case 1: // invalid input
                 IOT_ERROR("[BUG] invalid input for dispatch");
 
-                dmp_dev_client_job_cancel(pparam->pclient, pj,
+                dmp_dev_client_job_cancel(&pparam->pclient->c, pparam->pclient->thing_name, pj,
                         "{\"detail\":\"Job is cancelled due to device client bug.\"}");
                 break;
             case 2: // nothing to do
                 IOT_WARN("job operate property not found, reject");
 
-                dmp_dev_client_job_reject(pparam->pclient, pj,
+                dmp_dev_client_job_reject(&pparam->pclient->c, pparam->pclient->thing_name, pj,
                         "{\"failureDetail\":\"Job operate property not found.\"}");
                 break;
             case 3: // executor not found, unsupported operate
                 IOT_ERROR("unsupported job operator for this device client, reject");
 
-                dmp_dev_client_job_reject(pparam->pclient, pj,
+                dmp_dev_client_job_reject(&pparam->pclient->c, pparam->pclient->thing_name, pj,
                         "{\"failureDetail\":\"Job operate not support for this device client.\"}");
                 break;
             case 0:
-                dmp_dev_client_job_wip(pparam->pclient, pj,
+                dmp_dev_client_job_wip(&pparam->pclient->c, pparam->pclient->thing_name, pj,
                         "{\"detail\":\"Job is accepted and start to execute.\"}");
 
                 // execute job
                 IOT_DEBUG("start to execute job %s...", pj->job_id);
                 execute_rc = (*fun)(&dispatch_param);
-                IOT_INFO("job %s executed successfully (rc=%d)", pj->job_id, execute_rc);
+                IOT_INFO("job %s executed (rc=%d)", pj->job_id, execute_rc);
 
                 break;
         }

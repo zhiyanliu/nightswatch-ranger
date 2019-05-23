@@ -34,7 +34,7 @@ typedef struct {
 
     char job_id[MAX_SIZE_OF_JOB_ID + 1];
     char *job_doc;
-    size_t job_doc_l;
+    size_t job_doc_l; // job_doc buffer size, NOT include last NULL
 } job, *pjob, **ppjob;
 
 Job_Parse_Error_t job_parser_parse(void *payload, size_t payload_l, ppjob ppj,

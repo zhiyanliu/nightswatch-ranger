@@ -58,16 +58,19 @@ IoT_Error_t dmp_dev_client_job_loop(pdmp_dev_client client);
 
 // job update
 
-IoT_Error_t dmp_dev_client_job_update(pdmp_dev_client client, pjob pj,
+IoT_Error_t dmp_dev_client_job_update(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
         const char *job_status, const char *job_status_details);
 
-IoT_Error_t dmp_dev_client_job_wip(pdmp_dev_client pclient, pjob pj,
+IoT_Error_t dmp_dev_client_job_wip(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
         const char *job_status_details);
 
-IoT_Error_t dmp_dev_client_job_reject(pdmp_dev_client pclient, pjob pj,
+IoT_Error_t dmp_dev_client_job_reject(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
         const char *job_status_details);
 
-IoT_Error_t dmp_dev_client_job_cancel(pdmp_dev_client pclient, pjob pj,
+IoT_Error_t dmp_dev_client_job_cancel(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
+        const char *job_status_details);
+
+IoT_Error_t dmp_dev_client_job_done(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
         const char *job_status_details);
 
 // callback handler

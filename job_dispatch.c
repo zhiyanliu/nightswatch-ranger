@@ -24,7 +24,8 @@ static int32_t _token_c;
 
 pjob_dispatcher job_dispatcher_reg_executor(pjob_dispatcher pdispatcher,
         const char *op_type, size_t op_type_l, executor_t executor) {
-    pexecutor_record record = NULL, executor_v_new = NULL;
+    pexecutor_record record = NULL;
+    pexecutor_record *executor_v_new; // pexecutor_record list
 
     if (NULL == pdispatcher) {
         return NULL;
@@ -42,8 +43,8 @@ pjob_dispatcher job_dispatcher_reg_executor(pjob_dispatcher pdispatcher,
     record->op_type_l = op_type_l;
     record->executor = executor;
 
-    executor_v_new = (pexecutor_record)realloc(pdispatcher->executor_v,
-            sizeof(executor_record)*(pdispatcher->executor_v_l + 1));
+    executor_v_new = (pexecutor_record*)realloc(pdispatcher->executor_v,
+            sizeof(pexecutor_record)*(pdispatcher->executor_v_l + 1));
     if (NULL == executor_v_new) {
         IOT_ERROR("unable to increase executor list");
         goto error;
@@ -51,6 +52,7 @@ pjob_dispatcher job_dispatcher_reg_executor(pjob_dispatcher pdispatcher,
 
     pdispatcher->executor_v = executor_v_new;
     pdispatcher->executor_v_l++;
+    pdispatcher->executor_v[pdispatcher->executor_v_l - 1] = record;
 
     goto ret;
 
@@ -62,7 +64,7 @@ ret:
 }
 
 int job_dispatcher_dispatch(pjob_dispatch_param pparam, executor_t *pfun) {
-    size_t i = 0;
+    size_t i;
     int op_l = 0, equal;
     jsmntok_t *tok_operate, *tok;
     bool executed = false;
@@ -100,16 +102,16 @@ int job_dispatcher_dispatch(pjob_dispatch_param pparam, executor_t *pfun) {
 
     IOT_DEBUG("dispatch job operate: %.*s", op_l, (char *)pparam->pj->job_doc + tok_operate->start);
 
-    while (i++ < pparam->pdispatcher->executor_v_l) {
-        if (op_l != (pparam->pdispatcher->executor_v + i)->op_type_l)
+    for (i = 0; i < pparam->pdispatcher->executor_v_l; i++) {
+        if (op_l != (*(pparam->pdispatcher->executor_v + i))->op_type_l - 1) // op_type[last] == NULL
             continue;
 
-        equal = strncmp((pparam->pdispatcher->executor_v + i)->op_type,
+        equal = strncmp((*(pparam->pdispatcher->executor_v + i))->op_type,
                 (char *)pparam->pj->job_doc + tok_operate->start, op_l);
         if (0 != equal)
             continue;
 
-        (*pfun) = (pparam->pdispatcher->executor_v + i)->executor;
+        (*pfun) = (*(pparam->pdispatcher->executor_v + i))->executor;
 
         // one executor for one kind of job operation, ignore duplicated executors
         return 0;
