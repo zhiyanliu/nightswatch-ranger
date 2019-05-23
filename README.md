@@ -4,7 +4,7 @@ This is the repository of the AWS RP project for iRootech DMP agent running in t
 
 ### Setup Environment
 
-As a C lang project, it needs Build tool and GCC toolchain to compile and link target. To easy development, `Makefile` currently supports Mac, Ubuntu and QuecOpen Linux platforms, you can coding and debug on local MBP, and integration on remote Ubuntu/Linux host, even with
+As a C lang project, it needs Build tool and GCC toolchain to compile and link target. To easy development, `Makefile` currently supports Mac and Ubuntu platforms, you can coding and debug on local MBP, and integration on remote Ubuntu/Linux host. QuecOpen Linux cross compiling toolchain is supported as well on Ubuntu platform.
 
 - `Mac platform`: ``xcode-select --install``
 
@@ -14,19 +14,36 @@ As a C lang project, it needs Build tool and GCC toolchain to compile and link t
 
 ```
 tar jxf EC20CEFAGR06A05M4G_OCPU_SDK.tar.bz2
-cd ql-ol-sdk
-source ql-ol-crosstool/ql-ol-crosstool-env-init # execute this for each new session, environment varibables exported.
+cd ql-ol-sdk/ql-ol-crosstool
+source ql-ol-crosstool-env-init
 ```
 
 >> **Note:**
 >>
->> After install QuecOpen Linux SDK, you can use use `arm-oe-linux-gnueabi-gcc -v` command to verify if cross complie toolchain is ready to work. However if you meet `ql-ol-crosstool/sysroots/x86_64-oesdk-linux/usr/bin/arm-oe-linux-gnueabi/arm-oe-linux-gnueabi-gcc: No such file or directory` issues, read troubleshooting section to resolve.
+>> When you install and setup QuecOpen Linux SDK by executing the command `source ql-ol-crosstool-env-init` at first time, you might meet follow issue, read troubleshooting section to get the solution as the reference.
+>>
+>> ```
+>> sed: can't read ./relocate_sdk.py: No such file or directory
+>> ```
+>>
+>> After the installation and setup, you can use use `arm-oe-linux-gnueabi-gcc -v` command to verify if cross complie toolchain is ready to build the project, you might meet below 2 kinds of issue, read troubleshooting section to get the solution as the reference.
+>>
+>> ```
+>> Relocating .../ql-ol-sdk/ql-ol-crosstool/sysroots/x86_64-oesdk-linux/usr/bin/python: line 4:
+>> /ql-ol-sdk/ql-ol-crosstool/sysroots/x86_64-oesdk-linux/usr/bin/python2.7.real: No such file or directory
+>> SDK could not be set up. Relocate script failed. Abort!
+>> ```
+>>
+>> ```
+>> ql-ol-crosstool/sysroots/x86_64-oesdk-linux/usr/bin/arm-oe-linux-gnueabi/arm-oe-linux-gnueabi-gcc:
+>> No such file or directory
+>> ```
 
 ### Basic
 
 1. `git clone ssh://git-codecommit.ap-northeast-1.amazonaws.com/v1/repos/irootech-dmp-rp-agent`
 2. `cd irootech-dmp-rp-agent`
-3. ``source <QuecOpen Linux SDK>/ql-ol-crosstool/ql-ol-crosstool-env-init``, do this for cross compiling for QuecOpen Linux platform only.
+3. ``source <QuecOpen Linux SDK>/ql-ol-crosstool/ql-ol-crosstool-env-init``, do this for cross compiling for QuecOpen Linux platform only, and execute this for each new session, environment varibables are exported and dedicated.
 4. ``make``, and inary `dmpagent` is built out to current directory if build process is executed successfully.
 
 #### Advanced
@@ -48,7 +65,7 @@ Build supports follow 6 targets currently, e.g. you can execute `make libawsiot.
 
 ## How to config
 
-Overall you need to config DMP agent from below two sides:
+Overall you need to config DMP device agent from below two sides:
 
 1. Setup customer specific device client parameter configuration.
 2. Place certificate, public and private key files to project home directory.
@@ -84,6 +101,14 @@ Other specific configurations are listed as well for different service, e.g. MQT
 
 ## Troubleshooting
 
+>> **Note:**
+>> This is the section to try to assist builder resolves issues during the development, read this as the reference and take the actions according to your own environment.
+
+### sed: can't read ./relocate_sdk.py: No such file or directory
+
+1. When you first time to install and setup QuecOpen Linux SDK, make sure you are execute `source ql-ol-crosstool-env-init` in the directory `<QuecOpen Linux SDK>/ql-ol-sdk/ql-ol-crosstool`.
+2. The installation and set needs python2 supports, in Ubuntu install it by command `sudo apt install python-minimal`.
+
 ### arm-oe-linux-gnueabi-gcc: No such file or directory
 
 When command `arm-oe-linux-gnueabi-gcc -v` failed and output `ql-ol-crosstool/sysroots/x86_64-oesdk-linux/usr/bin/arm-oe-linux-gnueabi/arm-oe-linux-gnueabi-gcc: No such file or directory`, it might caused by shared object dependencies missing.
@@ -91,3 +116,9 @@ When command `arm-oe-linux-gnueabi-gcc -v` failed and output `ql-ol-crosstool/sy
 Run `ldd ql-ol-crosstool/sysroots/x86_64-oesdk-linux/usr/bin/arm-oe-linux-gnueabi/arm-oe-linux-gnueabi-gcc`, to find out if any shared object dependencies is missing.
 
 For example, libraray `/home/eve/Eve_Linux_Server/Qualcomm/MDM9x07/OpenLinux/LE.1.0.c3/Release/EC20CEFAG/R06A05/apps_proc/oe-core/build/tmp-glibc/deploy/sdk/ql-ol-sdk/ql-ol-crosstool/sysroots/x86_64-oesdk-linux/lib/ld-linux-x86-64.so.2` is not existing really in my development host, even directory `/home/eve` is missing. The solution is simple to create a link file at `/home/eve/Eve_Linux_Server/Qualcomm/MDM9x07/OpenLinux/LE.1.0.c3/Release/EC20CEFAG/R06A05/apps_proc/oe-core/build/tmp-glibc/deploy/sdk` and point to valid QuecOpen Linux SDK directory.
+
+Kindly reminder, don't forget to give enough read permission to allow current user to access the files and directories under `/home/eve`.
+
+### python2.7.real: No such file or directory
+
+Same reason as above one. Any `No such file or directory` issue but the file you executed is actually exising, can use ``ldd`` to check if any shared object dependencies of the linked/ELF file are missing.
