@@ -6,7 +6,8 @@
 .prevent_execution:
 	exit 0
 
-CC = gcc
+CC ?= gcc
+AR ?= ar
 
 #remove @ for no make command prints
 DEBUG = @
@@ -61,7 +62,7 @@ MBED_TLS_MAKE_CMD = $(MAKE) -C $(MBEDTLS_DIR)
 
 PRE_MAKE_SDK_CMD = $(MBED_TLS_MAKE_CMD)
 MAKE_SDK_CMD = $(CC) $(IOT_SRC_FILES) $(COMPILER_FLAGS) -c $(INCLUDE_ALL_DIRS)
-POST_MAKE_SDK_CMD = ar cr lib$(SDK_NAME).a *.o
+POST_MAKE_SDK_CMD = $(AR) cr lib$(SDK_NAME).a *.o
 
 APP_SRC_FILES += $(shell find $(APP_DIR) -name "*.c" -not -path "./aws-iot-device-sdk-embedded-C/*")
 
