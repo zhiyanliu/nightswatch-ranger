@@ -38,7 +38,7 @@ typedef struct {
 } job, *pjob, **ppjob;
 
 Job_Parse_Error_t job_parser_parse(void *payload, size_t payload_l, ppjob ppj,
-        char *job_status_cur, size_t job_status_cur_l);
+        char *job_status_recv, size_t job_status_recv_l);
 
 void job_parser_job_free(pjob pj);
 
