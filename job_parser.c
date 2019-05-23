@@ -68,7 +68,7 @@ Job_Parse_Error_t job_parser_parse(void *payload, size_t payload_l, ppjob ppj,
 
     tok_execution = findToken("execution", payload, _json_tok_v);
     if (NULL == tok_execution) {
-        IOT_WARN("job execution property not found, nothing to do");
+        IOT_DEBUG("job execution property not found, skip");
         prc = JOB_EXECUTION_EMPTY;
         goto ret;
     }

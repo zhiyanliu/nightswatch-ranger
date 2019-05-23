@@ -136,13 +136,15 @@ void _next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint16_t to
 
 
     prc = job_parser_parse(params->payload, params->payloadLen, &pj, job_status_recv, 20);
+    if (JOB_EXECUTION_EMPTY == prc) {
+        // skip the job without execution property
+        goto ret;
+    }
+
     if (SUCCESS != prc) {
         IOT_ERROR("job_parser_parse returned error: %d", rc);
 
         switch(prc) {
-            case JOB_EXECUTION_EMPTY:
-                IOT_WARN("invalid job without execution property, skip");
-                goto ret;
             case JOB_ID_NOT_FOUND_ERROR:
                 IOT_WARN("invalid job without job id, skip");
                 goto ret;
