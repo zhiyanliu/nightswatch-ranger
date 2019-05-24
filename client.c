@@ -16,6 +16,8 @@
 #include "client.h"
 
 
+static void disconnect_callback_handler(AWS_IoT_Client *pclient, void *data);
+
 pdmp_dev_client dmp_dev_client_create() {
     pdmp_dev_client pclient = (pdmp_dev_client)malloc(sizeof(dmp_dev_client));
     if (NULL != pclient)
@@ -64,7 +66,7 @@ IoT_Error_t dmp_dev_client_init(pdmp_dev_client pclient, char *thing_name,
     pclient->mqtt_init_params->mqttCommandTimeout_ms = 20000;
     pclient->mqtt_init_params->tlsHandshakeTimeout_ms = 5000;
     pclient->mqtt_init_params->isSSLHostnameVerify = true;
-    pclient->mqtt_init_params->disconnectHandler = _disconnect_callback_handler;
+    pclient->mqtt_init_params->disconnectHandler = disconnect_callback_handler;
     pclient->mqtt_init_params->disconnectHandlerData = NULL;
 
     return aws_iot_mqtt_init(&pclient->c, pclient->mqtt_init_params);
@@ -124,7 +126,7 @@ IoT_Error_t dmp_dev_client_connect(pdmp_dev_client pclient, char *client_id) {
     return rc;
 }
 
-void _disconnect_callback_handler(AWS_IoT_Client *pclient, void *data) {
+static void disconnect_callback_handler(AWS_IoT_Client *pclient, void *data) {
     IoT_Error_t rc = FAILURE;
 
     IOT_WARN("mqtt connection disconnected");

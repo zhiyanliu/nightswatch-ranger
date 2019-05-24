@@ -21,6 +21,15 @@ typedef struct {
     pjob_dispatcher pdispatcher;
 }job_callback_param, *pjob_callback_param;
 
+static void next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint16_t topic_name_l,
+                                      IoT_Publish_Message_Params *params, void *data);
+
+static void update_accepted_callback_handler(AWS_IoT_Client *client, char *topic_name, uint16_t topic_name_l,
+                                             IoT_Publish_Message_Params *params, void *data);
+
+static void update_rejected_callback_handler(AWS_IoT_Client *client, char *topic_name, uint16_t topic_name_l,
+                                             IoT_Publish_Message_Params *params, void *data);
+
 IoT_Error_t dmp_dev_client_job_listen(pdmp_dev_client pclient, pjob_dispatcher pdispatcher) {
     IoT_Error_t rc = FAILURE;
     pjob_callback_param pparam = NULL;
@@ -39,7 +48,7 @@ IoT_Error_t dmp_dev_client_job_listen(pdmp_dev_client pclient, pjob_dispatcher p
 
     rc = aws_iot_jobs_subscribe_to_job_messages(
             &pclient->c, QOS0, pclient->thing_name, NULL, JOB_NOTIFY_NEXT_TOPIC, JOB_REQUEST_TYPE,
-            _next_job_callback_handler, pparam, pclient->tpc_sub_notify_next, MAX_JOB_TOPIC_LENGTH_BYTES);
+            next_job_callback_handler, pparam, pclient->tpc_sub_notify_next, MAX_JOB_TOPIC_LENGTH_BYTES);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to subscribe topic $aws/things/{thing-name}/jobs/notify-next: %d", rc);
         return rc;
@@ -47,7 +56,7 @@ IoT_Error_t dmp_dev_client_job_listen(pdmp_dev_client pclient, pjob_dispatcher p
 
     rc = aws_iot_jobs_subscribe_to_job_messages(
             &pclient->c, QOS0, pclient->thing_name, JOB_ID_NEXT, JOB_DESCRIBE_TOPIC, JOB_WILDCARD_REPLY_TYPE,
-            _next_job_callback_handler, pparam, pclient->tpc_sub_get_next, MAX_JOB_TOPIC_LENGTH_BYTES);
+            next_job_callback_handler, pparam, pclient->tpc_sub_get_next, MAX_JOB_TOPIC_LENGTH_BYTES);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to subscribe topic $aws/things/{thing-name}/jobs/$next/get/+: %d", rc);
         return rc;
@@ -55,7 +64,7 @@ IoT_Error_t dmp_dev_client_job_listen(pdmp_dev_client pclient, pjob_dispatcher p
 
     rc = aws_iot_jobs_subscribe_to_job_messages(
             &pclient->c, QOS0, pclient->thing_name, JOB_ID_WILDCARD, JOB_UPDATE_TOPIC, JOB_ACCEPTED_REPLY_TYPE,
-            _update_accepted_callback_handler, pparam, pclient->tpc_sub_upd_accepted, MAX_JOB_TOPIC_LENGTH_BYTES);
+            update_accepted_callback_handler, pparam, pclient->tpc_sub_upd_accepted, MAX_JOB_TOPIC_LENGTH_BYTES);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to subscribe topic $aws/things/{thing-name}/jobs/+/update/accepted: %d", rc);
         return rc;
@@ -63,7 +72,7 @@ IoT_Error_t dmp_dev_client_job_listen(pdmp_dev_client pclient, pjob_dispatcher p
 
     rc = aws_iot_jobs_subscribe_to_job_messages(
             &pclient->c, QOS0, pclient->thing_name, JOB_ID_WILDCARD, JOB_UPDATE_TOPIC, JOB_REJECTED_REPLY_TYPE,
-            _update_rejected_callback_handler, pparam, pclient->tpc_sub_upd_rejected, MAX_JOB_TOPIC_LENGTH_BYTES);
+            update_rejected_callback_handler, pparam, pclient->tpc_sub_upd_rejected, MAX_JOB_TOPIC_LENGTH_BYTES);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to subscribe topic $aws/things/{thing-name}/jobs/+/update/rejected: %d", rc);
     }
@@ -103,7 +112,7 @@ IoT_Error_t dmp_dev_client_job_loop(pdmp_dev_client pclient) {
     return rc;
 }
 
-void _next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint16_t topic_name_l,
+static void next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint16_t topic_name_l,
         IoT_Publish_Message_Params *params, void *data) {
 
     IoT_Error_t rc = FAILURE;
@@ -229,7 +238,7 @@ ret:
     return;
 }
 
-void _update_accepted_callback_handler(AWS_IoT_Client *client, char *topic_name, uint16_t topic_name_l,
+static void update_accepted_callback_handler(AWS_IoT_Client *client, char *topic_name, uint16_t topic_name_l,
         IoT_Publish_Message_Params *params, void *data) {
 
     IOT_UNUSED(client);
@@ -239,7 +248,7 @@ void _update_accepted_callback_handler(AWS_IoT_Client *client, char *topic_name,
     IOT_DEBUG("payload: %.*s", (int) params->payloadLen, (char *)params->payload);
 }
 
-void _update_rejected_callback_handler(AWS_IoT_Client *client, char *topic_name, uint16_t topic_name_l,
+static void update_rejected_callback_handler(AWS_IoT_Client *client, char *topic_name, uint16_t topic_name_l,
         IoT_Publish_Message_Params *params, void *data) {
 
     IOT_UNUSED(client);

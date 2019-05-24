@@ -10,18 +10,21 @@
 
 #include "client.h"
 #include "job_dispatch_bootstrap.h"
+#include "s3_http.h"
 
 
 int main(int argc, char **argv) {
     pdmp_dev_client pclient = NULL;
     IoT_Error_t rc = FAILURE;
 
+    s3_http_init();
+
     pjob_dispatcher pdispatcher = job_dispatcher_bootstrap();
 
     pclient = dmp_dev_client_create();
     if (NULL == pclient) {
         IOT_ERROR("dmp_dev_client_alloc returned NULL");
-        return rc;
+        goto ret;
     }
 
     rc = dmp_dev_client_init(pclient, AWS_IOT_MY_THING_NAME,
@@ -31,7 +34,7 @@ int main(int argc, char **argv) {
         IOT_ERROR("dmp_dev_client_init returned error: %d", rc);
 
         dmp_dev_client_free(pclient);
-        return rc;
+        goto ret;
     }
 
     IOT_INFO("connecting to AWS IoT Core: %s:%d", AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
@@ -41,7 +44,7 @@ int main(int argc, char **argv) {
         IOT_ERROR("dmp_dev_client_connect returned error: %d", rc);
 
         dmp_dev_client_free(pclient);
-        return rc;
+        goto ret;
     }
 
     IOT_INFO("subscribe to job topics")
@@ -51,7 +54,7 @@ int main(int argc, char **argv) {
         IOT_ERROR("dmp_dev_client_job_listen returned error: %d", rc);
 
         dmp_dev_client_free(pclient);
-        return rc;
+        goto ret;
     }
 
     IOT_INFO("ask a job to process")
@@ -61,17 +64,20 @@ int main(int argc, char **argv) {
         IOT_ERROR("dmp_dev_client_job_ask returned error: %d", rc);
 
         dmp_dev_client_free(pclient);
-        return rc;
+        goto ret;
     }
 
     IOT_INFO("start job mqtt message handle loop")
 
-    rc =dmp_dev_client_job_loop(pclient);
+    rc = dmp_dev_client_job_loop(pclient);
     if(SUCCESS != rc) {
         IOT_ERROR("dmp_dev_client_job_loop returned error: %d", rc);
 
         dmp_dev_client_free(pclient);
     }
+
+ret:
+    s3_http_free();
 
     return rc;
 }

@@ -73,17 +73,4 @@ IoT_Error_t dmp_dev_client_job_cancel(AWS_IoT_Client *paws_iot_client, char *thi
 IoT_Error_t dmp_dev_client_job_done(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
         const char *job_status_details);
 
-// callback handler
-
-void _disconnect_callback_handler(AWS_IoT_Client *client, void *data);
-
-void _next_job_callback_handler(AWS_IoT_Client *client, char *topic_name, uint16_t topic_name_l,
-        IoT_Publish_Message_Params *params, void *data);
-
-void _update_accepted_callback_handler(AWS_IoT_Client *client, char *topic_name, uint16_t topic_name_l,
-        IoT_Publish_Message_Params *params, void *data);
-
-void _update_rejected_callback_handler(AWS_IoT_Client *client, char *topic_name, uint16_t topic_name_l,
-        IoT_Publish_Message_Params *params, void *data);
-
 #endif /* IROOTECH_DMP_RP_AGENT_CLIENT_H_ */

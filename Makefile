@@ -69,7 +69,7 @@ APP_SRC_FILES += $(shell find $(APP_DIR) -name "*.c" -not -path "./aws-iot-devic
 EXTERNAL_LIBS += -L $(TLS_LIB_DIR)
 AWSIOT_SDK += -L $(APP_DIR)
 LD_FLAG += -Wl,-rpath,$(TLS_LIB_DIR)
-LD_FLAG += -ldl -lpthread -l$(SDK_NAME) -lmbedtls -lmbedx509 -lmbedcrypto
+LD_FLAG += -ldl -lpthread -l$(SDK_NAME) -lmbedtls -lmbedx509 -lmbedcrypto -lcurl
 
 MAKE_APP_CMD = $(CC) $(APP_SRC_FILES) $(COMPILER_FLAGS) -o $(APP_NAME) $(LD_FLAG) $(EXTERNAL_LIBS) $(AWSIOT_SDK) $(INCLUDE_ALL_DIRS)
 
