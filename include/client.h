@@ -13,8 +13,6 @@
 #include "job_dispatch.h"
 #include "job_parser.h"
 
-#define IROOTECH_DMP_RP_AGENT_CERTS_DIR "certs"
-
 
 typedef struct {
     char *thing_name; // outside keep the buffer

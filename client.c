@@ -13,6 +13,7 @@
 #include "aws_iot_mqtt_client.h"
 #include "aws_iot_mqtt_client_interface.h"
 
+#include "certs.h"
 #include "client.h"
 
 
@@ -38,12 +39,15 @@ IoT_Error_t dmp_dev_client_init(pdmp_dev_client pclient, char *thing_name,
 
     getcwd(pclient->work_dir_path, PATH_MAX + 1);
 
-    snprintf(pclient->root_ca_file_path, PATH_MAX + 1, "%s/%s/%s",
-            pclient->work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, root_ca_file);
-    snprintf(pclient->client_ca_file_path, PATH_MAX + 1, "%s/%s/%s",
-            pclient->work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, client_ca_file);
-    snprintf(pclient->key_file_path, PATH_MAX + 1, "%s/%s/%s",
-            pclient->work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, key_file);
+    snprintf(pclient->root_ca_file_path, PATH_MAX + 1, "%s/%s/%s/%s",
+            pclient->work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_CURRENT,
+            root_ca_file);
+    snprintf(pclient->client_ca_file_path, PATH_MAX + 1, "%s/%s/%s/%s",
+            pclient->work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_CURRENT,
+            client_ca_file);
+    snprintf(pclient->key_file_path, PATH_MAX + 1, "%s/%s/%s/%s",
+            pclient->work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_CURRENT,
+            key_file);
 
     IOT_DEBUG("root ca file: %s", pclient->root_ca_file_path);
     IOT_DEBUG("client cert file: %s", pclient->client_ca_file_path);
