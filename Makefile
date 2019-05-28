@@ -39,6 +39,10 @@ MBEDTLS_DIR = $(IOT_SDK_DIR)/external_libs/mbedTLS
 TLS_LIB_DIR = $(MBEDTLS_DIR)/library
 TLS_INCLUDE_DIR = -I $(MBEDTLS_DIR)/include
 
+#MD5 - openssl, for mac/brew
+OPENSSL_LIB_DIR = /usr/local/opt/openssl/lib
+OPENSSL_INCLUDE_DIR = -I /usr/local/opt/openssl/include
+
 #APP - dmpagent
 APP_INCLUDE_DIRS += -I $(APP_DIR)
 APP_INCLUDE_DIRS += -I $(APP_DIR)/include
@@ -47,6 +51,7 @@ APP_INCLUDE_DIRS += -I $(APP_DIR)/include
 INCLUDE_ALL_DIRS += $(APP_INCLUDE_DIRS)
 INCLUDE_ALL_DIRS += $(IOT_INCLUDE_DIRS)
 INCLUDE_ALL_DIRS += $(TLS_INCLUDE_DIR)
+INCLUDE_ALL_DIRS += $(OPENSSL_INCLUDE_DIR)
 
 # Logging level control
 LOG_FLAGS += -DENABLE_IOT_DEBUG
@@ -66,10 +71,10 @@ POST_MAKE_SDK_CMD = $(AR) cr lib$(SDK_NAME).a *.o
 
 APP_SRC_FILES += $(shell find $(APP_DIR) -name "*.c" -not -path "./aws-iot-device-sdk-embedded-C/*")
 
-EXTERNAL_LIBS += -L $(TLS_LIB_DIR)
+EXTERNAL_LIBS += -L $(TLS_LIB_DIR) -L $(OPENSSL_LIB_DIR)
 AWSIOT_SDK += -L $(APP_DIR)
 LD_FLAG += -Wl,-rpath,$(TLS_LIB_DIR)
-LD_FLAG += -ldl -lpthread -l$(SDK_NAME) -lmbedtls -lmbedx509 -lmbedcrypto -lcurl
+LD_FLAG += -ldl -lpthread -l$(SDK_NAME) -lmbedtls -lmbedx509 -lmbedcrypto -lcurl -lcrypto
 
 MAKE_APP_CMD = $(CC) $(APP_SRC_FILES) $(COMPILER_FLAGS) -o $(APP_NAME) $(LD_FLAG) $(EXTERNAL_LIBS) $(AWSIOT_SDK) $(INCLUDE_ALL_DIRS)
 

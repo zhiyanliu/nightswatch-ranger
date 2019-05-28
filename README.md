@@ -6,17 +6,28 @@ This is the repository of the AWS RP project for iRootech DMP agent running in t
 
 As a C lang project, it needs Build tool and GCC toolchain to compile and link target. To easy development, `Makefile` currently supports Mac and Ubuntu platforms, you can coding and debug on local MBP, and integration on remote Ubuntu/Linux host. QuecOpen Linux cross compiling toolchain is supported as well on Ubuntu platform.
 
-- `Mac platform`: ``xcode-select --install``
+- `Mac platform`:
 
-- `Ubuntu platform`: ``sudo apt install build-essential``
+  ```
+  xcode-select --install
+  /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+  brew install openssl # openssl/md5.h
+  ```
+
+- `Ubuntu platform`:
+
+  ```
+  sudo apt install build-essential
+  sudo apt install libssl-dev # openssl/md5.h
+  ```
 
 - `QuecOpen Linux`: execute follow commands, and read offical document `Quectel_EC2x&AG35-QuecOpen`.
 
-```
-tar jxf EC20CEFAGR06A05M4G_OCPU_SDK.tar.bz2
-cd ql-ol-sdk/ql-ol-crosstool
-source ql-ol-crosstool-env-init
-```
+  ```
+  tar jxf EC20CEFAGR06A05M4G_OCPU_SDK.tar.bz2
+  cd ql-ol-sdk/ql-ol-crosstool
+  source ql-ol-crosstool-env-init
+  ```
 
 >> **Note:**
 >>
