@@ -118,7 +118,9 @@ Device needs to download package from S3 service, to resolve such network issue,
 export http_proxy=http://127.0.0.1:1087
 export https_proxy=$http_proxy
 ```
+### Dependencies
 
+- `unzip`: install it on Ubuntu by ``apt-get install unzip``.
 
 ## Troubleshooting
 

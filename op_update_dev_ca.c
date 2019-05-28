@@ -9,6 +9,7 @@
   #include <sys/syslimits.h>
 #endif
 #include <stddef.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "aws_iot_error.h"
@@ -17,6 +18,7 @@
 
 #include "aws_iot_config.h"
 #include "certs.h"
+#include "client.h"
 #include "job_dispatch.h"
 #include "job_parser.h"
 #include "md5_calc.h"
@@ -71,26 +73,34 @@ static int parse_job_doc(pjob pj, char *pkg_url, size_t pkg_url_l, unsigned char
     return 0;
 }
 
-static int step1_download_pkg_file(pjob_dispatch_param pparam) {
-    char pkg_url[4096], free_par_path[PATH_MAX + 1], alter_certs_pkg_file_path[PATH_MAX + 1];
-    unsigned char pkg_md5sum_src[MD5_SUM_LENGTH + 1], pkg_md5sum_dst[MD5_SUM_LENGTH + 1];
-    int rc;
+static int step1_download_pkg_file(pjob_dispatch_param pparam, char *alter_par_path, size_t alter_par_path_l,
+        char *alter_certs_pkg_file_path, size_t alter_certs_pkg_file_path_l,
+        unsigned char *pkg_md5_dst, size_t pkg_md5_l) {
 
-    rc = parse_job_doc(pparam->pj, pkg_url, 4096, pkg_md5sum_dst, MD5_SUM_LENGTH + 1);
+    char pkg_url[4096];
+    int rc = 0;
+
+    if (NULL == alter_par_path)
+        return 1;
+
+    if (NULL == alter_certs_pkg_file_path)
+        return 1;
+
+    rc = parse_job_doc(pparam->pj, pkg_url, 4096, pkg_md5_dst, pkg_md5_l);
     if (0 != rc) {
         IOT_ERROR("failed to parse job doc for update device ca operate: %d", rc);
         return rc;
     }
 
-    rc = certs_get_free_par_dir(free_par_path, PATH_MAX + 1);
+    rc = certs_get_free_par_dir(alter_par_path, alter_par_path_l, NULL, 0);
     if (0 != rc) {
         IOT_ERROR("failed to determine alternative certs partition path: %d", rc);
         return rc;
     }
 
-    snprintf(alter_certs_pkg_file_path, PATH_MAX + 1, "%s/certs.zip", free_par_path);
+    snprintf(alter_certs_pkg_file_path, alter_certs_pkg_file_path_l, "%s/certs.zip", alter_par_path);
 
-    IOT_INFO("download certs package to %s from %s", alter_certs_pkg_file_path, pkg_url);
+    IOT_DEBUG("download certs package to %s from %s", alter_certs_pkg_file_path, pkg_url);
 
     rc = unlink(alter_certs_pkg_file_path);
     if (0 != rc && ENOENT != errno) {
@@ -104,31 +114,128 @@ static int step1_download_pkg_file(pjob_dispatch_param pparam) {
         return rc;
     }
 
-    rc = md5_calculate(alter_certs_pkg_file_path, pkg_md5sum_src, MD5_SUM_LENGTH);
+    IOT_INFO("certs package downloaded to %s", alter_certs_pkg_file_path);
+
+    return rc;
+}
+
+static int step2_verify_pkg_md5sum(pjob_dispatch_param pparam,
+        char *alter_certs_pkg_file_path, size_t alter_certs_pkg_file_path_l,
+        unsigned char *pkg_md5_src, unsigned char *pkg_md5_dst, size_t pkg_md5_l) {
+    int rc = 0;
+
+    IOT_DEBUG("verify certs package md5")
+
+    rc = md5_calculate(alter_certs_pkg_file_path, pkg_md5_src, MD5_SUM_LENGTH);
     if (0 != rc) {
         IOT_ERROR("failed to calculate package md5 sum: %d", rc);
         return rc;
     }
 
-    rc = md5_compare(pkg_md5sum_src, pkg_md5sum_dst, MD5_SUM_LENGTH);
+    rc = md5_compare(pkg_md5_src, pkg_md5_dst, MD5_SUM_LENGTH + 1);
     if (0 != rc) {
-        IOT_ERROR("failed to verify job package md5: expected: %s, actual: %.*s",
-                pkg_md5sum_dst, MD5_SUM_LENGTH, pkg_md5sum_src);
+        IOT_ERROR("failed to verify certs package md5: expected: %s, actual: %.*s",
+                pkg_md5_dst, MD5_SUM_LENGTH, pkg_md5_src);
         return rc;
     }
 
-    IOT_INFO("new certs package is downloaded and md5sum verified ok: %s (%.*s)",
-            alter_certs_pkg_file_path, MD5_SUM_LENGTH, pkg_md5sum_src);
+    IOT_INFO("certs package md5 verified ok: %s (%.*s)",
+            alter_certs_pkg_file_path, MD5_SUM_LENGTH, pkg_md5_src);
 
     return 0;
 }
 
+static int step3_unzip_pkg_file(pjob_dispatch_param pparam, char *alter_par_path, char *alter_certs_pkg_file_path) {
+    char cmd[PATH_MAX * 2 + 20] = {0};
+    int rc = 0;
+
+    if (NULL == alter_par_path)
+        return 1;
+
+    if (NULL == alter_certs_pkg_file_path)
+        return 1;
+
+    snprintf(cmd, PATH_MAX * 2 + 20, "unzip -o %s -d %s", alter_certs_pkg_file_path, alter_par_path);
+
+    rc = system(cmd);
+    if (0 != rc) {
+        IOT_ERROR("failed to unzip certs package: %d", rc);
+        return rc;
+    }
+
+    // remove downloaded zip package to save disk space
+    unlink(alter_certs_pkg_file_path);
+
+    IOT_INFO("certs package unzipped into %s", alter_par_path);
+
+    return rc;
+}
+
+static int step4_switch_certs_par(pjob_dispatch_param pparam) {
+    char target_file_path[PATH_MAX + 1];
+    int rc = 0;
+
+    rc = certs_switch_par(target_file_path, PATH_MAX + 1);
+    if (0 != rc) {
+        IOT_ERROR("[CRITICAL] certs partition symbolic link might be broken, will reset in next start");
+        return rc;
+    }
+
+    IOT_INFO("certs partition is switched to %s", target_file_path);
+
+    return rc;
+}
+
 int op_update_dev_ca_entry(pjob_dispatch_param pparam) {
-    step1_download_pkg_file(pparam);
+    char alter_par_path[PATH_MAX + 1], alter_certs_pkg_file_path[PATH_MAX + 1];
+    unsigned char pkg_md5_src[MD5_SUM_LENGTH + 1], pkg_md5_dst[MD5_SUM_LENGTH + 1];
+    int rc = 0;
 
-    // fake and test finish
-//    dmp_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
-//                            "{\"detail\":\"system ota is complete successfully.\"}");
+    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+            "{\"detail\":\"Downloading new certs package to update.\"}");
 
-    return 0;
+    rc = step1_download_pkg_file(pparam, alter_par_path, PATH_MAX + 1, alter_certs_pkg_file_path, PATH_MAX + 1,
+            pkg_md5_dst, MD5_SUM_LENGTH + 1);
+    if (0 != rc) {
+        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+                "{\"detail\":\"Failed to downloading new certs package.\"}");
+        return rc;
+    }
+
+    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+            "{\"detail\":\"Verifying the md5 of new certs package.\"}");
+
+    rc = step2_verify_pkg_md5sum(pparam, alter_certs_pkg_file_path, PATH_MAX + 1,
+            pkg_md5_src, pkg_md5_dst, MD5_SUM_LENGTH + 1);
+    if (0 != rc) {
+        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+                "{\"detail\":\"Failed to verify the md5 of new certs package.\"}");
+        return rc;
+    }
+
+    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+            "{\"detail\":\"Extracting new certs package.\"}");
+
+    rc = step3_unzip_pkg_file(pparam, alter_par_path, alter_certs_pkg_file_path);
+    if (0 != rc) {
+        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+                "{\"detail\":\"Failed to extract new certs package.\"}");
+        return rc;
+    }
+
+    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+            "{\"detail\":\"Configure device to use new certs.\"}");
+
+    rc = step4_switch_certs_par(pparam);
+
+    // TODO(prod): wait all ongoing executions on the device finish.
+    // TODO(prod): close all resources, e.g. opened fd.
+
+    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+            "{\"detail\":\"Restarting device application to apply new certs.\"}");
+
+    // TODO(zhiyan): call execv(3)/execve(2) to restart the program with an argument
+    //  to pass current job id in to new process
+
+    return rc;
 }

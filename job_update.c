@@ -40,6 +40,8 @@ IoT_Error_t dmp_dev_client_job_update(AWS_IoT_Client *paws_iot_client, char *thi
         IOT_ERROR("failed to request updating job %s to %s status: %d", pj->job_id, job_status, rc);
     }
 
+    // FIXME(prod): wait update received by cloud and get response in accepted or rejected topic.
+
     return rc;
 }
 
@@ -63,3 +65,7 @@ IoT_Error_t dmp_dev_client_job_done(AWS_IoT_Client *paws_iot_client, char *thing
     return dmp_dev_client_job_update(paws_iot_client, thing_name, pj, "SUCCEEDED", job_status_details);
 }
 
+IoT_Error_t dmp_dev_client_job_failed(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
+        const char *job_status_details) {
+    return dmp_dev_client_job_update(paws_iot_client, thing_name, pj, "FAILED", job_status_details);
+}

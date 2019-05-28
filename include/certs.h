@@ -16,6 +16,12 @@
 
 int certs_cur_par_name(char *par_name, size_t par_name_l);
 
-int certs_get_free_par_dir(char *file_path, size_t file_path_l);
+int certs_get_free_par_dir(char *file_path, size_t file_path_l, char *file_name, size_t file_name_l);
+
+int certs_switch_par(char *new_file_path, size_t new_file_path_l);
+
+int certs_check_par_link();
+
+int certs_reset_par_link();
 
 #endif //IROOTECH_DMP_RP_AGENT_CERTS_H_

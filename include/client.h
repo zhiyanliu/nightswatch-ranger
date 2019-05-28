@@ -71,4 +71,7 @@ IoT_Error_t dmp_dev_client_job_cancel(AWS_IoT_Client *paws_iot_client, char *thi
 IoT_Error_t dmp_dev_client_job_done(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
         const char *job_status_details);
 
+IoT_Error_t dmp_dev_client_job_failed(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
+        const char *job_status_details);
+
 #endif /* IROOTECH_DMP_RP_AGENT_CLIENT_H_ */

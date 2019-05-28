@@ -15,7 +15,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "aws_iot_log.h"
 #include "certs.h"
 
 
@@ -55,7 +54,7 @@ int certs_cur_par_name(char *par_name, size_t par_name_l) {
     return 0;
 }
 
-int certs_get_free_par_dir(char *file_path, size_t file_path_l) {
+int certs_get_free_par_dir(char *file_path, size_t file_path_l, char *file_name, size_t file_name_l) {
     char cur_par_name[PATH_MAX + 1], work_dir_path[PATH_MAX + 1], *par_name = NULL;
     int rc = 0;
     size_t len = 0;
@@ -78,5 +77,56 @@ int certs_get_free_par_dir(char *file_path, size_t file_path_l) {
     snprintf(file_path, file_path_l, "%s/%s/%s",
              work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, par_name);
 
+    if (NULL != file_name) {
+        snprintf(file_name, file_name_l, "%s", par_name);
+    }
+
+    return 0;
+}
+
+int certs_switch_par(char *new_file_path, size_t new_file_path_l) {
+    char work_dir_path[PATH_MAX + 1], free_par_name[PATH_MAX + 1], link_file_path[PATH_MAX + 1],
+            target_file_path[PATH_MAX + 1], target_file_name[PATH_MAX + 1];
+    int rc = 0;
+
+    rc = certs_get_free_par_dir(free_par_name, PATH_MAX + 1, target_file_name, PATH_MAX + 1);
+    if (0 != rc)
+        return rc;
+
+    getcwd(work_dir_path, PATH_MAX + 1);
+
+    rc = snprintf(target_file_path, PATH_MAX + 1, "./%s", target_file_name);
+    if (0 == rc)
+        return 1;
+
+    rc = snprintf(link_file_path, PATH_MAX + 1, "%s/%s/%s",
+             work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_CURRENT);
+    if (0 == rc)
+        return 1;
+
+    rc = unlink(link_file_path);
+    if (0 != rc) { // OMG, no worries, can reset
+        return rc;
+    }
+
+    rc = symlink(target_file_path, link_file_path);
+    if (0 != rc)
+        return rc;
+
+    if (NULL != new_file_path) {
+        snprintf(new_file_path, new_file_path_l, "%s/%s/%s",
+                work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, target_file_name);
+    }
+
+    return rc;
+}
+
+int certs_check_par_link() {
+    // TODO(zhiyan)
+    return 0;
+}
+
+int certs_reset_par_link() {
+    // TODO(zhiyan)
     return 0;
 }
