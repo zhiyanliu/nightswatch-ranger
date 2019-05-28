@@ -12,8 +12,6 @@
 
 #include "job_dispatch.h"
 
-#define _JOB_OPERATE_PROPERTY_NAME "operate"
-
 
 /*
  * we handle job message one by one, no concurrent process.
@@ -94,9 +92,9 @@ int job_dispatcher_dispatch(pjob_dispatch_param pparam, executor_t *pfun) {
         return 1;
     }
 
-    tok_operate = findToken(_JOB_OPERATE_PROPERTY_NAME, pparam->pj->job_doc, _json_tok_v);
+    tok_operate = findToken(JOB_OPERATE_PROPERTY_NAME, pparam->pj->job_doc, _json_tok_v);
     if (NULL == tok_operate) {
-        IOT_WARN("job operate property %s not found, nothing to do", _JOB_OPERATE_PROPERTY_NAME);
+        IOT_WARN("job operate property %s not found, nothing to do", JOB_OPERATE_PROPERTY_NAME);
         return 2;
     }
 

@@ -1,0 +1,5 @@
+{
+  "operate": "update_dev_ca",
+  "pkg_url": "${aws:iot:s3-presigned-url:https://s3.amazonaws.com/liuzhiyan-irootech-dmp-rp/update_dev_ca.zip}",
+  "pkg_md5": "80df6ef0f599da9e6134741a45bba956"
+}

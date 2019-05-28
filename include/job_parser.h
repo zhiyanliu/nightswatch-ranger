@@ -8,6 +8,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#define JOB_OPERATE_PROPERTY_NAME "operate"
+#define JOB_PKG_URL_PROPERTY_NAME "pkg_url"
+#define JOB_PKG_MD5_PROPERTY_NAME "pkg_md5"
+
 
 typedef enum {
     /** Success return value - no error occurred */
