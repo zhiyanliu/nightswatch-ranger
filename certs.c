@@ -2,6 +2,7 @@
 // Created by Zhi Yan Liu on 2019-05-28.
 //
 
+#include <errno.h>
 #include <libgen.h>
 #ifdef __linux__
   #include <linux/limits.h>
@@ -15,8 +16,29 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "aws_iot_log.h"
+
 #include "certs.h"
 
+
+int certs_init() {
+    int rc = 0;
+
+    rc = certs_check_par_link();
+    if (0 == rc)
+        return rc;
+
+    IOT_WARN("invalid certs partition detected, reset to default one - par#1");
+
+    rc = certs_reset_par_link();
+    if (0 == rc) {
+        IOT_INFO("certs partition has been fixed");
+    } else {
+        IOT_ERROR("failed to reset certs partition: %d", rc);
+    }
+
+    return rc;
+}
 
 int certs_cur_par_name(char *par_name, size_t par_name_l) {
     char work_dir_path[PATH_MAX + 1], link_file_path[PATH_MAX + 1], *filename;
@@ -57,7 +79,6 @@ int certs_cur_par_name(char *par_name, size_t par_name_l) {
 int certs_get_free_par_dir(char *file_path, size_t file_path_l, char *file_name, size_t file_name_l) {
     char cur_par_name[PATH_MAX + 1], work_dir_path[PATH_MAX + 1], *par_name = NULL;
     int rc = 0;
-    size_t len = 0;
 
     rc = certs_cur_par_name(cur_par_name, PATH_MAX + 1);
     if (0 != rc)
@@ -65,14 +86,12 @@ int certs_get_free_par_dir(char *file_path, size_t file_path_l, char *file_name,
 
     getcwd(work_dir_path, PATH_MAX + 1);
 
-    len = file_path_l > PATH_MAX + 1 ? PATH_MAX + 1 : file_path_l; // min
-
-    if (0 == strncmp(IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_1, cur_par_name, len))
+    if (0 == strncmp(IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_1, cur_par_name, 2))
         par_name = IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_2;
-    else if (0 == strncmp(IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_2, cur_par_name, len))
+    else if (0 == strncmp(IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_2, cur_par_name, 2))
         par_name = IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_1;
     else
-        return 1;
+        return 1; // link to invalid partition dir
 
     snprintf(file_path, file_path_l, "%s/%s/%s",
              work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, par_name);
@@ -122,11 +141,44 @@ int certs_switch_par(char *new_file_path, size_t new_file_path_l) {
 }
 
 int certs_check_par_link() {
-    // TODO(zhiyan)
-    return 0;
+    char cur_par_name[PATH_MAX + 1];
+    int rc = 0;
+
+    rc = certs_cur_par_name(cur_par_name, PATH_MAX + 1);
+    if (0 != rc)
+        return rc;
+
+    if (0 == strncmp(IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_1, cur_par_name, 2))
+        return 0;
+    else if (0 == strncmp(IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_2, cur_par_name, 2))
+        return 0;
+    return 1;
 }
 
 int certs_reset_par_link() {
-    // TODO(zhiyan)
-    return 0;
+    char work_dir_path[PATH_MAX + 1], link_file_path[PATH_MAX + 1],
+            target_file_path[PATH_MAX + 1], target_file_name[PATH_MAX + 1];
+    int rc = 0;
+
+    rc = snprintf(target_file_path, PATH_MAX + 1, "./%s", IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_1);
+    if (0 == rc)
+        return 1;
+
+    getcwd(work_dir_path, PATH_MAX + 1);
+
+    rc = snprintf(link_file_path, PATH_MAX + 1, "%s/%s/%s",
+                  work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_CURRENT);
+    if (0 == rc)
+        return 1;
+
+    rc = unlink(link_file_path); // no directory handle currently, due to it's not a normal failure case
+    if (0 != rc && ENOENT != errno) {
+        return rc; // hmm..
+    }
+
+    rc = symlink(target_file_path, link_file_path);
+    if (0 != rc)
+        return rc; //Oops..
+
+    return rc;
 }
