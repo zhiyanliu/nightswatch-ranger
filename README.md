@@ -85,7 +85,7 @@ Overall you need to config DMP device agent from below two sides:
 
 The client needs to use valid certificate, public and private key files to establish authorized communication between the device client and AWS IoT Core service.
 
-When initialize setup, you can retrieve these key files from AWS IoT Core server by web Console explained by the [document](https://docs.aws.amazon.com/iot/latest/developerguide/create-device-certificate.html), then save them to `certs/latest` directory under project home. The file name of certificate, public and private key should keep consistent with the configuration you provided in the parameter configurations mentioned in follow section, by default the file names are:
+When initialize setup, you can retrieve these key files from AWS IoT Core server by web Console explained by the [document](https://docs.aws.amazon.com/iot/latest/developerguide/create-device-certificate.html), then save them to `certs/p1` directory under project home. The file name of certificate, public and private key should keep consistent with the configuration you provided in the parameter configurations mentioned in follow section, by default the file names are:
 
 - `root-ca.crt`: root CA file name.
 - `cert.pem`: device signed certificate file name.
@@ -104,9 +104,9 @@ The complete configurations are listed in `aws_iot_config.h` file. You need to t
 - `AWS_IOT_MQTT_HOST`: the customer specific MQTT HOST. The same will be used for Thing Shadow.
 - `AWS_IOT_MQTT_CLIENT_ID`: the MQTT client ID should be unique for every device.
 - `AWS_IOT_MY_THING_NAME`: the thing Name of the Shadow this device is associated with.
-- `AWS_IOT_ROOT_CA_FILENAME`: root CA file name, equals to the real file name you placed in `certs/latest` directory.
-- `AWS_IOT_CERTIFICATE_FILENAME`: device signed certificate file name, equals to the real file name you placed in `certs/latest` directory.
-- `AWS_IOT_PRIVATE_KEY_FILENAME`: device private key file name, equals to the real file name you placed in `certs/latest` directory.
+- `AWS_IOT_ROOT_CA_FILENAME`: root CA file name, equals to the real file name you placed in `certs/p1` directory.
+- `AWS_IOT_CERTIFICATE_FILENAME`: device signed certificate file name, equals to the real file name you placed in `certs/p1` directory.
+- `AWS_IOT_PRIVATE_KEY_FILENAME`: device private key file name, equals to the real file name you placed in `certs/p1` directory.
 
 Other specific configurations are listed as well for different service, e.g. MQTT PubSub, Thing Shadow. You might follow the inline comments and the directive name of the configuration is straightforward.
 
