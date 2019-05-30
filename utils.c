@@ -2,13 +2,15 @@
 // Created by Liu, Zhiyan on 2019-05-30.
 //
 
-#include <linux/limits.h>
+
 #include <stdio.h>
 #if defined(__linux__)
+  #include <linux/limits.h>
   #include <unistd.h>
   #include <sys/types.h>
 #elif defined(__APPLE__)
   #include <mach-o/dyld.h>
+  #include <sys/syslimits.h>
 #endif
 
 #include "utils.h"
