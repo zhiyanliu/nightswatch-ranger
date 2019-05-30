@@ -100,7 +100,8 @@ client_connect_ret client_connect(pdmp_dev_client *ppclient, IoT_Error_t *iot_rc
     if (SUCCESS == *iot_rc)
         return CONN_SUCCESS;
 
-    if (NETWORK_SSL_READ_ERROR != *iot_rc) {
+    if (NETWORK_SSL_READ_ERROR != *iot_rc && NETWORK_X509_ROOT_CRT_PARSE_ERROR != *iot_rc &&
+            NETWORK_X509_DEVICE_CRT_PARSE_ERROR != *iot_rc && NETWORK_PK_PRIVATE_KEY_PARSE_ERROR != *iot_rc) {
         IOT_ERROR("failed to connect client to the cloud");
         return CONN_FAILED;
     }
@@ -123,10 +124,11 @@ client_connect_ret client_connect(pdmp_dev_client *ppclient, IoT_Error_t *iot_rc
     if (SUCCESS != *iot_rc) {
         IOT_ERROR("failed to connect client to the cloud");
 
-        if (NETWORK_SSL_READ_ERROR == *iot_rc)
-            return CERTS_FALLBACK_CONN_FAILED;
-        else
+        if (NETWORK_SSL_READ_ERROR != *iot_rc && NETWORK_X509_ROOT_CRT_PARSE_ERROR != *iot_rc &&
+                NETWORK_X509_DEVICE_CRT_PARSE_ERROR != *iot_rc && NETWORK_PK_PRIVATE_KEY_PARSE_ERROR != *iot_rc)
             return CONN_FAILED;
+        else
+            return CERTS_FALLBACK_CONN_FAILED;
     }
 
     return CERTS_FALLBACK_CONN_SUCCESS;
