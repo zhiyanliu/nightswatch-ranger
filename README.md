@@ -89,7 +89,7 @@ When initialize setup, you can retrieve these key files from AWS IoT Core server
 
 - `root-ca.crt`: root CA file name.
 - `cert.pem`: device signed certificate file name.
-- `privkey.pem`: device private key file name.
+- `private.key`: device private key file name.
 
 ### Device client parameter configuration
 

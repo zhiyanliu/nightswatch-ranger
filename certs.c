@@ -178,7 +178,14 @@ int certs_reset_par_link() {
 
     rc = symlink(target_file_path, link_file_path);
     if (0 != rc)
-        return rc; //Oops..
+        return rc; // oops..
 
     return rc;
+}
+
+int certs_par_name_valid(char *par_name) {
+    if (0 == strncmp(IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_1, par_name, 2))
+        return 1;
+
+    return !strncmp(IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_2, par_name, 2);
 }

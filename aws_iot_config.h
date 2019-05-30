@@ -17,7 +17,7 @@
 #define AWS_IOT_MY_THING_NAME        "irootech-dmp-dev1" ///< Thing Name of the Shadow this device is associated with
 #define AWS_IOT_ROOT_CA_FILENAME     "root-ca.crt" ///< Root CA file name
 #define AWS_IOT_CERTIFICATE_FILENAME "cert.pem" ///< device signed certificate file name
-#define AWS_IOT_PRIVATE_KEY_FILENAME "privkey.pem" ///< Device private key filename
+#define AWS_IOT_PRIVATE_KEY_FILENAME "private.key" ///< Device private key filename
 
 // MQTT PubSub
 #define AWS_IOT_MQTT_RX_BUF_LEN 102400 ///< Any message that comes into the device should be less than this buffer size. If a received message is bigger than this buffer size the message will be dropped.

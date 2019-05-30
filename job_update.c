@@ -14,12 +14,15 @@
 #include "client.h"
 
 
-IoT_Error_t dmp_dev_client_job_update(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
+IoT_Error_t dmp_dev_client_job_update(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status, const char *job_status_details) {
     IoT_Error_t rc = FAILURE;
     AwsIotJobExecutionUpdateRequest req;
     char tpc_pub_update[MAX_JOB_TOPIC_LENGTH_BYTES];
     char msg[256];
+
+    if (NULL == job_id)
+        return FAILURE;
 
     req.status = aws_iot_jobs_map_string_to_job_status(job_status);
     if (JOB_EXECUTION_UNKNOWN_STATUS == req.status) {
@@ -34,10 +37,10 @@ IoT_Error_t dmp_dev_client_job_update(AWS_IoT_Client *paws_iot_client, char *thi
     req.includeJobDocument = false;
     req.clientToken = NULL;
 
-    rc = aws_iot_jobs_send_update(paws_iot_client, QOS0, thing_name, pj->job_id, &req,
+    rc = aws_iot_jobs_send_update(paws_iot_client, QOS0, thing_name, job_id, &req,
             tpc_pub_update, MAX_JOB_TOPIC_LENGTH_BYTES, msg, sizeof(msg) / sizeof(char));
     if (SUCCESS != rc) {
-        IOT_ERROR("failed to request updating job %s to %s status: %d", pj->job_id, job_status, rc);
+        IOT_ERROR("failed to request updating job %s to %s status: %d", job_id, job_status, rc);
     }
 
     // FIXME(prod): wait update received by cloud and get response in accepted or rejected topic.
@@ -45,27 +48,27 @@ IoT_Error_t dmp_dev_client_job_update(AWS_IoT_Client *paws_iot_client, char *thi
     return rc;
 }
 
-IoT_Error_t dmp_dev_client_job_wip(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
+IoT_Error_t dmp_dev_client_job_wip(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status_details) {
-    return dmp_dev_client_job_update(paws_iot_client, thing_name, pj, "IN_PROGRESS", job_status_details);
+    return dmp_dev_client_job_update(paws_iot_client, thing_name, job_id, "IN_PROGRESS", job_status_details);
 }
 
-IoT_Error_t dmp_dev_client_job_reject(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
+IoT_Error_t dmp_dev_client_job_reject(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status_details) {
-    return dmp_dev_client_job_update(paws_iot_client, thing_name, pj, "REJECTED", job_status_details);
+    return dmp_dev_client_job_update(paws_iot_client, thing_name, job_id, "REJECTED", job_status_details);
 }
 
-IoT_Error_t dmp_dev_client_job_cancel(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
+IoT_Error_t dmp_dev_client_job_cancel(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status_details) {
-    return dmp_dev_client_job_update(paws_iot_client, thing_name, pj, "CANCELED", job_status_details);
+    return dmp_dev_client_job_update(paws_iot_client, thing_name, job_id, "CANCELED", job_status_details);
 }
 
-IoT_Error_t dmp_dev_client_job_done(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
+IoT_Error_t dmp_dev_client_job_done(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status_details) {
-    return dmp_dev_client_job_update(paws_iot_client, thing_name, pj, "SUCCEEDED", job_status_details);
+    return dmp_dev_client_job_update(paws_iot_client, thing_name, job_id, "SUCCEEDED", job_status_details);
 }
 
-IoT_Error_t dmp_dev_client_job_failed(AWS_IoT_Client *paws_iot_client, char *thing_name, pjob pj,
+IoT_Error_t dmp_dev_client_job_failed(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status_details) {
-    return dmp_dev_client_job_update(paws_iot_client, thing_name, pj, "FAILED", job_status_details);
+    return dmp_dev_client_job_update(paws_iot_client, thing_name, job_id, "FAILED", job_status_details);
 }

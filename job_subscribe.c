@@ -30,7 +30,7 @@ static void update_accepted_callback_handler(AWS_IoT_Client *client, char *topic
 static void update_rejected_callback_handler(AWS_IoT_Client *client, char *topic_name, uint16_t topic_name_l,
                                              IoT_Publish_Message_Params *params, void *data);
 
-IoT_Error_t dmp_dev_client_job_listen(pdmp_dev_client pclient, pjob_dispatcher pdispatcher) {
+IoT_Error_t dmp_dev_client_job_listen_next(pdmp_dev_client pclient, pjob_dispatcher pdispatcher) {
     IoT_Error_t rc = FAILURE;
     pjob_callback_param pparam = NULL;
 
@@ -59,8 +59,26 @@ IoT_Error_t dmp_dev_client_job_listen(pdmp_dev_client pclient, pjob_dispatcher p
             next_job_callback_handler, pparam, pclient->tpc_sub_get_next, MAX_JOB_TOPIC_LENGTH_BYTES);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to subscribe topic $aws/things/{thing-name}/jobs/$next/get/+: %d", rc);
-        return rc;
     }
+
+    return rc;
+}
+
+IoT_Error_t dmp_dev_client_job_listen_update(pdmp_dev_client pclient, pjob_dispatcher pdispatcher) {
+    IoT_Error_t rc = FAILURE;
+    pjob_callback_param pparam = NULL;
+
+    if (NULL == pclient)
+        return FAILURE;
+
+    pparam = (pjob_callback_param)malloc(sizeof(job_callback_param));
+    if (NULL == pparam) {
+        IOT_ERROR("unable to allocate job execution parameter");
+        return FAILURE;
+    }
+
+    pparam->pclient = pclient;
+    pparam->pdispatcher = pdispatcher;
 
     rc = aws_iot_jobs_subscribe_to_job_messages(
             &pclient->c, QOS0, pclient->thing_name, JOB_ID_WILDCARD, JOB_UPDATE_TOPIC, JOB_ACCEPTED_REPLY_TYPE,
@@ -182,7 +200,7 @@ static void next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint1
 
         if (NULL != job_status) {
             rc = dmp_dev_client_job_update(&pparam->pclient->c, pparam->pclient->thing_name,
-                    pj, job_status, job_status_details);
+                    pj->job_id, job_status, job_status_details);
             if (SUCCESS != rc)
                 IOT_ERROR("dmp_dev_client_job_update returned error: %d", rc);
         }
@@ -204,23 +222,23 @@ static void next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint1
             case 1: // invalid input
                 IOT_ERROR("[BUG] invalid input for dispatch");
 
-                dmp_dev_client_job_cancel(&pparam->pclient->c, pparam->pclient->thing_name, pj,
+                dmp_dev_client_job_cancel(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
                         "{\"detail\":\"Job is cancelled due to device client bug.\"}");
                 break;
             case 2: // nothing to do
                 IOT_WARN("job operate property not found, reject");
 
-                dmp_dev_client_job_reject(&pparam->pclient->c, pparam->pclient->thing_name, pj,
+                dmp_dev_client_job_reject(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
                         "{\"failureDetail\":\"Job operate property not found.\"}");
                 break;
             case 3: // executor not found, unsupported operate
                 IOT_ERROR("unsupported job operator for this device client, reject");
 
-                dmp_dev_client_job_reject(&pparam->pclient->c, pparam->pclient->thing_name, pj,
+                dmp_dev_client_job_reject(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
                         "{\"failureDetail\":\"Job operate not support for this device client.\"}");
                 break;
             case 0:
-                dmp_dev_client_job_wip(&pparam->pclient->c, pparam->pclient->thing_name, pj,
+                dmp_dev_client_job_wip(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
                         "{\"detail\":\"Job is accepted and start to execute.\"}");
 
                 // execute job

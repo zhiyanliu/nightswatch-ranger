@@ -27,4 +27,6 @@ int certs_check_par_link();
 
 int certs_reset_par_link();
 
+int certs_par_name_valid(char *par_name);
+
 #endif //IROOTECH_DMP_RP_AGENT_CERTS_H_

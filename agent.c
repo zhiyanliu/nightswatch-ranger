@@ -4,46 +4,54 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "aws_iot_error.h"
 #include "aws_iot_log.h"
 
 #include "client.h"
 #include "certs.h"
+#include "flag.h"
 #include "job_dispatch_bootstrap.h"
 #include "s3_http.h"
 
 
-IoT_Error_t run(pdmp_dev_client pclient, pjob_dispatcher pdispatcher) {
-    IoT_Error_t rc = FAILURE;
+typedef enum {
+    CONN_SUCCESS = 0,
+    CONN_FAILED = -1,
+    CERTS_FALLBACK_CONN_SUCCESS = -2,
+    CERTS_FALLBACK_CONN_FAILED = -3,
+    CERTS_ERROR = -4
+} client_connect_ret;
 
-    IOT_DEBUG("subscribe job topics")
+int to_update_dev_ca(int argc, char **argv, char **upd_dev_ca_job_id) {
+    int rc = 0;
+    char *flag_ca_par_name, cur_par_name[PATH_MAX + 1];
 
-    rc = dmp_dev_client_job_listen(pclient, pdispatcher);
-    if (SUCCESS != rc) {
-        IOT_ERROR("failed to subscribe job topics: %d", rc);
-        return rc;
+    if (NULL == upd_dev_ca_job_id)
+        return 0;
+
+    rc = flagged_update_dev_ca(argc, argv, upd_dev_ca_job_id, &flag_ca_par_name);
+    if (0 == rc) // flag not provided
+        return 0;
+
+    rc = certs_cur_par_name(cur_par_name, PATH_MAX + 1);
+    if (0 != rc) {
+        IOT_ERROR("failed to get current certs partition name: %d", rc);
+        return 0;
     }
 
-    IOT_DEBUG("ask job to process")
-
-    rc = dmp_dev_client_job_ask(pclient);
-    if (SUCCESS != rc) {
-        IOT_ERROR("failed to ask job to process: %d", rc);
-        return rc;
+    rc = strncmp(cur_par_name, flag_ca_par_name, PATH_MAX + 1);
+    if (0 != rc) {
+        IOT_WARN("invalid flag of certs partition name provided, current: %s, flag: %s, skip update device certs",
+                 cur_par_name, flag_ca_par_name);
+        return 0;
     }
 
-    IOT_DEBUG("start mqtt message handling loop")
-
-    rc = dmp_dev_client_job_loop(pclient);
-    if (SUCCESS != rc) {
-        IOT_ERROR("failed to start mqtt message handling loop: %d", rc);
-    }
-
-    return rc;
+    return 1;
 }
 
-IoT_Error_t client_connect(pdmp_dev_client *ppclient) {
+IoT_Error_t _client_connect(pdmp_dev_client *ppclient) {
     char cur_par_name[PATH_MAX + 1];
     IoT_Error_t iot_rc = FAILURE;
     int rc = 0;
@@ -79,10 +87,116 @@ IoT_Error_t client_connect(pdmp_dev_client *ppclient) {
     return iot_rc;
 }
 
+client_connect_ret client_connect(pdmp_dev_client *ppclient, IoT_Error_t *iot_rc, int upd_dev_ca) {
+    int rc = 0;
+
+    IOT_DEBUG("connecting to AWS IoT Core: %s:%d", AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
+
+    *iot_rc = _client_connect(ppclient);
+    if (SUCCESS == *iot_rc)
+        return CONN_SUCCESS;
+
+    if (NETWORK_SSL_READ_ERROR != *iot_rc) {
+        IOT_ERROR("failed to connect client to the cloud");
+        return CONN_FAILED;
+    }
+
+    // connection failure, suppose caused by current cert and key are invalid, switch to other one
+
+    if (upd_dev_ca)
+        IOT_WARN("failed to connect client to the cloud with new certs, fallback to old certs and reconnect");
+
+    rc = certs_switch_par(NULL, 0);
+    if (0 != rc) {
+        IOT_ERROR("[CRITICAL] certs partition symbolic link might be broken, will reset in next start");
+        *iot_rc = FAILURE;
+        return CERTS_ERROR;
+    }
+
+    IOT_INFO("certs partition is switched, reconnect");
+
+    *iot_rc = _client_connect(ppclient);
+    if (SUCCESS != *iot_rc) {
+        IOT_ERROR("failed to connect client to the cloud");
+
+        if (NETWORK_SSL_READ_ERROR == *iot_rc)
+            return CERTS_FALLBACK_CONN_FAILED;
+        else
+            return CONN_FAILED;
+    }
+
+    return CERTS_FALLBACK_CONN_SUCCESS;
+}
+
+IoT_Error_t run(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id, int upd_dev_ca_works) {
+    IoT_Error_t rc = FAILURE;
+    pjob_dispatcher pdispatcher = job_dispatcher_bootstrap();
+
+    IOT_DEBUG("subscribe job topics")
+
+    rc = dmp_dev_client_job_listen_update(pclient, pdispatcher);
+    if (SUCCESS != rc) {
+        IOT_ERROR("failed to subscribe job status update topics: %d", rc);
+        return rc;
+    }
+
+    if (upd_dev_ca) { // update wip device ca update job status first
+        if (NULL == upd_dev_ca_job_id) {
+            IOT_ERROR("[BUG] invalid job id to update job status");
+            return rc;
+        }
+
+        if (upd_dev_ca_works) {
+            rc = dmp_dev_client_job_done(&pclient->c, pclient->thing_name, upd_dev_ca_job_id,
+                    "{\"detail\":\"Device connected to the client using new certs.\"}");
+            if (SUCCESS != rc) {
+                IOT_ERROR("failed to set update device certs job status to SUCCEEDED, "
+                          "will redo this job if it still under IN_PROGRESS status: %d", rc);
+            }
+
+            IOT_INFO("failed to apply new certs, job id: %s", upd_dev_ca_job_id);
+        } else {
+            rc = dmp_dev_client_job_failed(&pclient->c, pclient->thing_name, upd_dev_ca_job_id,
+                    "{\"detail\":\"Device connected to the client using old certs.\"}");
+            if (SUCCESS != rc) {
+                IOT_ERROR("failed to update update device certs job status to FAILED, "
+                          "will redo this job if it still under IN_PROGRESS status: %d", rc);
+            }
+
+            IOT_ERROR("failed to apply new certs, job id: %s", upd_dev_ca_job_id);
+        }
+    }
+
+    rc = dmp_dev_client_job_listen_next(pclient, pdispatcher);
+    if (SUCCESS != rc) {
+        IOT_ERROR("failed to subscribe job next topics: %d", rc);
+        return rc;
+    }
+
+    IOT_DEBUG("ask job to process")
+
+    rc = dmp_dev_client_job_ask(pclient);
+    if (SUCCESS != rc) {
+        IOT_ERROR("failed to ask job to process: %d", rc);
+        return rc;
+    }
+
+    IOT_DEBUG("start mqtt message handling loop")
+
+    rc = dmp_dev_client_job_loop(pclient);
+    if (SUCCESS != rc) {
+        IOT_ERROR("failed to start mqtt message handling loop: %d", rc);
+    }
+
+    return rc;
+}
+
 int main(int argc, char **argv) {
     pdmp_dev_client pclient = NULL;
+    client_connect_ret conn_ret = CONN_FAILED;
     IoT_Error_t iot_rc = FAILURE;
-    int rc = 0;
+    int rc = 0, pd_dev_ca = 0, upd_dev_ca = 0, upd_dev_ca_works = 1;
+    char *upd_dev_ca_job_id = NULL;
 
     rc = certs_init();
     if (0 != rc) {
@@ -90,37 +204,27 @@ int main(int argc, char **argv) {
         return rc;
     }
 
-    IOT_DEBUG("connecting to AWS IoT Core: %s:%d", AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
+    upd_dev_ca = to_update_dev_ca(argc, argv, &upd_dev_ca_job_id);
+    if (upd_dev_ca)
+        IOT_DEBUG("application continues to apply new certs, job id: %s", upd_dev_ca_job_id);
 
-    iot_rc = client_connect(&pclient);
-    if (SUCCESS != iot_rc) {
-        if (NETWORK_SSL_READ_ERROR != iot_rc) {
-            IOT_ERROR("failed to connect client to the cloud, exit");
-            return 1;
-        } else { // connection failure, suppose caused by current cert and key are invalid, switch to other one
-            rc = certs_switch_par(NULL, 0);
-            if (0 != rc) {
-                IOT_ERROR("[CRITICAL] certs partition symbolic link might be broken, will reset in next start");
-                return 1;
-            }
-
-            IOT_INFO("certs partition is switched, reconnect");
-
-            iot_rc = client_connect(&pclient);
-            if (SUCCESS != iot_rc) {
-                IOT_ERROR("failed to connect client to the cloud, exit");
-                return 1;
-            }
-        }
+    conn_ret = client_connect(&pclient, &iot_rc, upd_dev_ca);
+    switch (conn_ret) {
+        case CERTS_FALLBACK_CONN_FAILED:
+            IOT_ERROR("[CRITICAL] failed to connect client to the cloud, "
+                      "both new and old certs are invalid");
+        case CONN_FAILED:
+        case CERTS_ERROR:
+            return iot_rc;
+        case CERTS_FALLBACK_CONN_SUCCESS:
+            upd_dev_ca_works = 0;
+        case CONN_SUCCESS:
+            IOT_INFO("client connected to the cloud successfully");
     }
-
-    IOT_INFO("client connected to the cloud");
 
     s3_http_init();
 
-    pjob_dispatcher pdispatcher = job_dispatcher_bootstrap();
-
-    iot_rc = run(pclient, pdispatcher);
+    iot_rc = run(pclient, upd_dev_ca, upd_dev_ca_job_id, upd_dev_ca_works);
     if (SUCCESS != iot_rc)
         IOT_ERROR("failed to run client: %d", iot_rc);
 

@@ -191,48 +191,49 @@ int op_update_dev_ca_entry(pjob_dispatch_param pparam) {
     unsigned char pkg_md5_src[MD5_SUM_LENGTH + 1], pkg_md5_dst[MD5_SUM_LENGTH + 1];
     int rc = 0;
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Downloading new certs package to update.\"}");
 
     rc = step1_download_pkg_file(pparam, alter_par_path, PATH_MAX + 1, alter_certs_pkg_file_path, PATH_MAX + 1,
             pkg_md5_dst, MD5_SUM_LENGTH + 1);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to downloading new certs package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Verifying the md5 of new certs package.\"}");
 
     rc = step2_verify_pkg_md5sum(pparam, alter_certs_pkg_file_path, PATH_MAX + 1,
             pkg_md5_src, pkg_md5_dst, MD5_SUM_LENGTH + 1);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to verify the md5 of new certs package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Extracting new certs package.\"}");
 
     rc = step3_unzip_pkg_file(pparam, alter_par_path, alter_certs_pkg_file_path);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to extract new certs package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Configure device to use new certs.\"}");
 
     rc = step4_switch_certs_par(pparam);
 
-    // TODO(prod): wait all ongoing executions on the device finish.
-    // TODO(prod): close all resources, e.g. opened fd.
+    // TODO(production): wait all ongoing executions on the device finish.
+    // TODO(production): close all resources, e.g. opened fd.
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj,
+    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Restarting device application to apply new certs.\"}");
+
 
     // TODO(zhiyan): call execv(3)/execve(2) to restart the program with an argument
     //  to pass current job id in to new process
