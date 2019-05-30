@@ -37,7 +37,7 @@ IoT_Error_t dmp_dev_client_job_update(AWS_IoT_Client *paws_iot_client, char *thi
     req.includeJobDocument = false;
     req.clientToken = NULL;
 
-    rc = aws_iot_jobs_send_update(paws_iot_client, QOS0, thing_name, job_id, &req,
+    rc = aws_iot_jobs_send_update(paws_iot_client, QOS1, thing_name, job_id, &req,
             tpc_pub_update, MAX_JOB_TOPIC_LENGTH_BYTES, msg, sizeof(msg) / sizeof(char));
     if (SUCCESS != rc) {
         IOT_ERROR("failed to request updating job %s to %s status: %d", job_id, job_status, rc);
