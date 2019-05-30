@@ -158,7 +158,7 @@ IoT_Error_t run(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id
                           "will redo this job if it still under IN_PROGRESS status: %d", rc);
             }
 
-            IOT_INFO("failed to apply new certs, job id: %s", upd_dev_ca_job_id);
+            IOT_INFO("update certs successfully, job id: %s", upd_dev_ca_job_id);
         } else {
             rc = dmp_dev_client_job_failed(&pclient->c, pclient->thing_name, upd_dev_ca_job_id,
                     "{\"detail\":\"Device connected to the client using old certs.\"}");

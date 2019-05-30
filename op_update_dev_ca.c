@@ -192,10 +192,10 @@ static int step5_restart_app(pjob_dispatch_param pparam, char *self_path, char *
 
     IOT_INFO("restarting the application, switch to using new certs");
 
-    rc = execl(self_path, self_path,
-            "--upd_dev_ca_job_id", pparam->pj->job_id, "--upd_dev_ca_par_name", alter_par_name);
+    rc = execl(self_path, self_path, "--upd_dev_ca_job_id", pparam->pj->job_id,
+            "--upd_dev_ca_par_name", alter_par_name, NULL);
     if (0 != rc) {
-        IOT_ERROR("[CRITICAL] failed to restart the myself: %d", rc);
+        IOT_ERROR("[CRITICAL] failed to restart the myself: %d", errno);
         return rc;
     }
 
