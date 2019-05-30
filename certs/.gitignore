@@ -1,0 +1,5 @@
+latest
+! p1/.gitignore
+! p2/.gitignore
+p1/*
+p2/*
