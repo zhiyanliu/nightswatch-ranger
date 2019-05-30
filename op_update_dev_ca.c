@@ -23,6 +23,7 @@
 #include "job_parser.h"
 #include "md5_calc.h"
 #include "s3_http.h"
+#include "utils.h"
 
 
 /*
@@ -171,11 +172,11 @@ static int step3_unzip_pkg_file(pjob_dispatch_param pparam, char *alter_par_path
     return rc;
 }
 
-static int step4_switch_certs_par(pjob_dispatch_param pparam) {
+static int step4_switch_certs_par(pjob_dispatch_param pparam, char *target_file_name, size_t target_file_name_l) {
     char target_file_path[PATH_MAX + 1];
     int rc = 0;
 
-    rc = certs_switch_par(target_file_path, PATH_MAX + 1);
+    rc = certs_switch_par(target_file_path, PATH_MAX + 1, target_file_name, target_file_name_l);
     if (0 != rc) {
         IOT_ERROR("[CRITICAL] certs partition symbolic link might be broken, will reset in next start");
         return rc;
@@ -186,10 +187,33 @@ static int step4_switch_certs_par(pjob_dispatch_param pparam) {
     return rc;
 }
 
+static int step5_restart_app(pjob_dispatch_param pparam, char *self_path, char *alter_par_name) {
+    int rc = 0;
+
+    IOT_INFO("restarting the application, switch to using new certs");
+
+    rc = execl(self_path, self_path,
+            "--upd_dev_ca_job_id", pparam->pj->job_id, "--upd_dev_ca_par_name", alter_par_name);
+    if (0 != rc) {
+        IOT_ERROR("[CRITICAL] failed to restart the myself: %d", rc);
+        return rc;
+    }
+
+    return rc;
+}
+
 int op_update_dev_ca_entry(pjob_dispatch_param pparam) {
-    char alter_par_path[PATH_MAX + 1], alter_certs_pkg_file_path[PATH_MAX + 1];
+    char self_path[PATH_MAX + 1], alter_par_path[PATH_MAX + 1], alter_par_name[PATH_MAX + 1],
+        alter_certs_pkg_file_path[PATH_MAX + 1];
     unsigned char pkg_md5_src[MD5_SUM_LENGTH + 1], pkg_md5_dst[MD5_SUM_LENGTH + 1];
     int rc = 0;
+
+    rc = cur_pid_full_path(self_path, PATH_MAX + 1);
+    if (0 != rc) {
+        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+                                  "{\"detail\":\"Failed to prepare execution.\"}");
+        return rc;
+    }
 
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Downloading new certs package to update.\"}");
@@ -226,17 +250,25 @@ int op_update_dev_ca_entry(pjob_dispatch_param pparam) {
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Configure device to use new certs.\"}");
 
-    rc = step4_switch_certs_par(pparam);
+    rc = step4_switch_certs_par(pparam, alter_par_name, PATH_MAX + 1);
+    if (0 != rc) {
+        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+                "{\"detail\":\"Failed to switch to using new certs.\"}");
+        return rc;
+    }
 
     // TODO(production): wait all ongoing executions on the device finish.
     // TODO(production): close all resources, e.g. opened fd.
 
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-            "{\"detail\":\"Restarting device application to apply new certs.\"}");
+                           "{\"detail\":\"Restarting device application to apply new certs.\"}");
 
-
-    // TODO(zhiyan): call execv(3)/execve(2) to restart the program with an argument
-    //  to pass current job id in to new process
+    rc = step5_restart_app(pparam, self_path, alter_par_name);
+    if (0 != rc) {
+        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+                "{\"detail\":\"Failed to restart the application.\"}");
+        return rc;
+    }
 
     return rc;
 }

@@ -16,11 +16,13 @@ int flagged_update_dev_ca(int argc, char **argv, char **job_id, char** ca_par_na
         if (0 == strcmp(argv[i], "--upd_dev_ca_job_id") && (i + 1) < argc) {
             *job_id = argv[i + 1];
             has_job_id = 1;
+            i++;
         }
 
         if (0 == strcmp(argv[i], "--upd_dev_ca_par_name") && (i + 1) < argc) {
             *ca_par_name = argv[i + 1];
             has_par_name = 1;
+            i++;
         }
     }
 

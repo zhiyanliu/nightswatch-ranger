@@ -2,9 +2,11 @@
 // Created by Zhi Yan Liu on 2019-05-20.
 //
 
+#include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "aws_iot_error.h"
 #include "aws_iot_log.h"
@@ -13,6 +15,7 @@
 #include "certs.h"
 #include "flag.h"
 #include "job_dispatch_bootstrap.h"
+#include "utils.h"
 #include "s3_http.h"
 
 
@@ -32,8 +35,9 @@ int to_update_dev_ca(int argc, char **argv, char **upd_dev_ca_job_id) {
         return 0;
 
     rc = flagged_update_dev_ca(argc, argv, upd_dev_ca_job_id, &flag_ca_par_name);
-    if (0 == rc) // flag not provided
+    if (0 == rc) { // flag not provided
         return 0;
+    }
 
     rc = certs_cur_par_name(cur_par_name, PATH_MAX + 1);
     if (0 != rc) {
@@ -106,7 +110,7 @@ client_connect_ret client_connect(pdmp_dev_client *ppclient, IoT_Error_t *iot_rc
     if (upd_dev_ca)
         IOT_WARN("failed to connect client to the cloud with new certs, fallback to old certs and reconnect");
 
-    rc = certs_switch_par(NULL, 0);
+    rc = certs_switch_par(NULL, 0, NULL, 0);
     if (0 != rc) {
         IOT_ERROR("[CRITICAL] certs partition symbolic link might be broken, will reset in next start");
         *iot_rc = FAILURE;
@@ -196,11 +200,25 @@ int main(int argc, char **argv) {
     client_connect_ret conn_ret = CONN_FAILED;
     IoT_Error_t iot_rc = FAILURE;
     int rc = 0, pd_dev_ca = 0, upd_dev_ca = 0, upd_dev_ca_works = 1;
-    char *upd_dev_ca_job_id = NULL;
+    char *upd_dev_ca_job_id = NULL, self_path[PATH_MAX + 1];
+
+    IOT_INFO("===============(pid: %d)===============", getpid());
+
+    rc = cur_pid_full_path(self_path, PATH_MAX + 1);
+    if (0 != rc) {
+        IOT_ERROR("failed to get current process path");
+        return rc;
+    }
+
+    rc = chdir(dirname(self_path));
+    if (0 != rc) {
+        IOT_ERROR("failed to change process working path");
+        return rc;
+    }
 
     rc = certs_init();
     if (0 != rc) {
-        IOT_ERROR("failed to init certs, exit");
+        IOT_ERROR("failed to init certs");
         return rc;
     }
 

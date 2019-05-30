@@ -103,7 +103,7 @@ int certs_get_free_par_dir(char *file_path, size_t file_path_l, char *file_name,
     return 0;
 }
 
-int certs_switch_par(char *new_file_path, size_t new_file_path_l) {
+int certs_switch_par(char *new_file_path, size_t new_file_path_l, char *new_file_name, size_t new_file_name_l) {
     char work_dir_path[PATH_MAX + 1], free_par_name[PATH_MAX + 1], link_file_path[PATH_MAX + 1],
             target_file_path[PATH_MAX + 1], target_file_name[PATH_MAX + 1];
     int rc = 0;
@@ -135,6 +135,10 @@ int certs_switch_par(char *new_file_path, size_t new_file_path_l) {
     if (NULL != new_file_path) {
         snprintf(new_file_path, new_file_path_l, "%s/%s/%s",
                 work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, target_file_name);
+    }
+
+    if (NULL != new_file_name) {
+        snprintf(new_file_name, new_file_name_l, "%s", target_file_name);
     }
 
     return rc;
