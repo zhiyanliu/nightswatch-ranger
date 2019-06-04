@@ -53,6 +53,9 @@ int s3_http_download(char* obj_url, char* out_file_path) {
     // disable progress meter, set to 0L to enable and disable debug output
     curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
 
+    // shit, gfw
+    curl_easy_setopt(curl_handle, CURLOPT_SSL_VERIFYPEER, 0);
+
     // send all data to callback to write data
     curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
 

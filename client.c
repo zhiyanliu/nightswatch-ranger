@@ -69,7 +69,7 @@ IoT_Error_t dmp_dev_client_init(pdmp_dev_client pclient, char *thing_name,
     pclient->mqtt_init_params->pDevicePrivateKeyLocation = pclient->key_file_path;
     pclient->mqtt_init_params->mqttCommandTimeout_ms = 20000;
     pclient->mqtt_init_params->tlsHandshakeTimeout_ms = 5000;
-    pclient->mqtt_init_params->isSSLHostnameVerify = true;
+    pclient->mqtt_init_params->isSSLHostnameVerify = false; // shit, gfw
     pclient->mqtt_init_params->disconnectHandler = disconnect_callback_handler;
     pclient->mqtt_init_params->disconnectHandlerData = NULL;
 
