@@ -11,8 +11,8 @@
 #define AWS_IOT_CONFIG_H_
 
 // Get from console
-#define AWS_IOT_MQTT_HOST            "a2xa0z3a2e61rw.iot.cn-north-1.amazonaws.com.cn" ///< Customer specific MQTT HOST. The same will be used for Thing Shadow
-//#define AWS_IOT_MQTT_HOST            "azffej9vrka1f-ats.iot.ap-northeast-1.amazonaws.com" ///< Customer specific MQTT HOST. The same will be used for Thing Shadow
+//#define AWS_IOT_MQTT_HOST            "a2xa0z3a2e61rw.iot.cn-north-1.amazonaws.com.cn" ///< Customer specific MQTT HOST. The same will be used for Thing Shadow
+#define AWS_IOT_MQTT_HOST            "azffej9vrka1f-ats.iot.ap-northeast-1.amazonaws.com" ///< Customer specific MQTT HOST. The same will be used for Thing Shadow
 #define AWS_IOT_MQTT_PORT            443 ///< default port for MQTT/S
 #define AWS_IOT_MQTT_CLIENT_ID       "irootech-dmp-dev-demo" ///< MQTT client ID should be unique for every device
 #define AWS_IOT_MY_THING_NAME        "irootech-dmp-dev-demo" ///< Thing Name of the Shadow this device is associated with
@@ -53,5 +53,6 @@
 #define MAX_SHADOW_TOPIC_LENGTH_BYTES MAX_SHADOW_TOPIC_LENGTH_WITHOUT_THINGNAME + MAX_SIZE_OF_THING_NAME ///< This size includes the length of topic with Thing Name
 
 #define DISABLE_METRICS false ///< Disable the collection of metrics by setting this to true
+#define MAX_S3_DOWNLOAD_TIME 60 ///< Maximum time in seconds that you allow the job package transfer from S3 to take.
 
 #endif /* AWS_IOT_CONFIG_H_ */

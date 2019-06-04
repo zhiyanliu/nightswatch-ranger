@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <curl/curl.h>
 
+#include "aws_iot_config.h"
+
 
 void s3_http_init() {
     curl_global_init(CURL_GLOBAL_ALL);
@@ -41,6 +43,9 @@ int s3_http_download(char* obj_url, char* out_file_path) {
 
     // set URL to get
     curl_easy_setopt(curl_handle, CURLOPT_URL, obj_url);
+
+    // set timeout
+    curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, MAX_S3_DOWNLOAD_TIME);
 
     // switch on full protocol/debug output
     curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
