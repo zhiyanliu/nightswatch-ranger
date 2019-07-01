@@ -20,19 +20,22 @@ APP_DIR = .
 #IoT SDK directory
 IOT_SDK_DIR = $(APP_DIR)/aws-iot-device-sdk-embedded-C
 
-PLATFORM_DIR = $(IOT_SDK_DIR)/platform/linux/mbedtls
+PLATFORM_TLS_DIR = $(IOT_SDK_DIR)/platform/linux/mbedtls
 PLATFORM_COMMON_DIR = $(IOT_SDK_DIR)/platform/linux/common
+PLATFORM_PTHREAD_DIR = $(IOT_SDK_DIR)/platform/linux/pthread
 
 IOT_INCLUDE_DIRS += -I $(IOT_SDK_DIR)/include
 IOT_INCLUDE_DIRS += -I $(IOT_SDK_DIR)/sdk_config
 IOT_INCLUDE_DIRS += -I $(IOT_SDK_DIR)/external_libs/jsmn
+IOT_INCLUDE_DIRS += -I $(PLATFORM_TLS_DIR)
 IOT_INCLUDE_DIRS += -I $(PLATFORM_COMMON_DIR)
-IOT_INCLUDE_DIRS += -I $(PLATFORM_DIR)
+IOT_INCLUDE_DIRS += -I $(PLATFORM_PTHREAD_DIR)
 
 IOT_SRC_FILES += $(shell find $(IOT_SDK_DIR)/src/ -name '*.c')
 IOT_SRC_FILES += $(shell find $(IOT_SDK_DIR)/external_libs/jsmn -name '*.c')
-IOT_SRC_FILES += $(shell find $(PLATFORM_DIR)/ -name '*.c')
+IOT_SRC_FILES += $(shell find $(PLATFORM_TLS_DIR)/ -name '*.c')
 IOT_SRC_FILES += $(shell find $(PLATFORM_COMMON_DIR)/ -name '*.c')
+IOT_SRC_FILES += $(shell find $(PLATFORM_PTHREAD_DIR)/ -name '*.c')
 
 #TLS - mbedtls
 MBEDTLS_DIR = $(IOT_SDK_DIR)/external_libs/mbedTLS
@@ -59,7 +62,7 @@ LOG_FLAGS += -DENABLE_IOT_INFO
 LOG_FLAGS += -DENABLE_IOT_WARN
 LOG_FLAGS += -DENABLE_IOT_ERROR
 
-COMPILER_FLAGS += $(LOG_FLAGS)
+COMPILER_FLAGS += $(LOG_FLAGS) -D_ENABLE_THREAD_SUPPORT_
 #If the processor is big endian uncomment the compiler flag
 #COMPILER_FLAGS += -DREVERSED
 

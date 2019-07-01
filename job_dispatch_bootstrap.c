@@ -8,11 +8,12 @@
 #include "job_dispatch_bootstrap.h"
 #include "job_op_types.h"
 
+#include "op_deploy_app_pkg.h"
 #include "op_ota_sys_pkg.h"
 #include "op_ota_app_pkg.h"
 #include "op_ota_app_plug.h"
-#include "op_update_app_cfg.h"
 #include "op_remote_op_exec.h"
+#include "op_update_app_cfg.h"
 #include "op_update_dev_ca.h"
 
 
@@ -25,7 +26,11 @@ pjob_dispatcher job_dispatcher_bootstrap() {
 
     // Device certificate update operation
     job_dispatcher_reg_executor(&job_dispatcher_default,
-                                JOB_OP_UPDATE_DEV_CA, strlen(JOB_OP_UPDATE_DEV_CA) + 1, op_update_dev_ca_entry);
+            JOB_OP_UPDATE_DEV_CA_STR, strlen(JOB_OP_UPDATE_DEV_CA_STR) + 1, op_update_dev_ca_entry);
+
+    // Deploy application package
+    job_dispatcher_reg_executor(&job_dispatcher_default,
+            JOB_DEPLOY_APP_PKG_STR, strlen(JOB_DEPLOY_APP_PKG_STR) + 1, op_deploy_app_pkg_entry);
 
     return &job_dispatcher_default;
 }

@@ -73,8 +73,8 @@ IoT_Error_t _client_connect(pdmp_dev_client *ppclient) {
     IOT_INFO("current certs partition: %s", cur_par_name);
 
     iot_rc = dmp_dev_client_init(*ppclient, AWS_IOT_MY_THING_NAME,
-                                 AWS_IOT_ROOT_CA_FILENAME, AWS_IOT_CERTIFICATE_FILENAME,
-                                 AWS_IOT_PRIVATE_KEY_FILENAME, AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
+            AWS_IOT_ROOT_CA_FILENAME, AWS_IOT_CERTIFICATE_FILENAME,
+            AWS_IOT_PRIVATE_KEY_FILENAME, AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
     if (SUCCESS != iot_rc) {
         IOT_ERROR("failed to init client: %d", iot_rc);
         dmp_dev_client_free(*ppclient);
@@ -158,9 +158,9 @@ IoT_Error_t run(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id
             if (SUCCESS != rc) {
                 IOT_ERROR("failed to set update device certs job status to SUCCEEDED, "
                           "will redo this job if it still under IN_PROGRESS status: %d", rc);
+            } else {
+                IOT_INFO("update certs successfully, job id: %s", upd_dev_ca_job_id);
             }
-
-            IOT_INFO("update certs successfully, job id: %s", upd_dev_ca_job_id);
         } else {
             rc = dmp_dev_client_job_failed(&pclient->c, pclient->thing_name, upd_dev_ca_job_id,
                     "{\"detail\":\"Device connected to the client using old certs.\"}");
@@ -205,6 +205,18 @@ int main(int argc, char **argv) {
     char *upd_dev_ca_job_id = NULL, self_path[PATH_MAX + 1];
 
     IOT_INFO("===============(pid: %d)===============", getpid());
+
+    rc = setuid(0);
+    if (0 != rc) {
+        IOT_ERROR("need root permission, try sudo");
+        return rc;
+    }
+
+    rc = setgid(0);
+    if (0 != rc) {
+        IOT_ERROR("need root permission, try sudo");
+        return rc;
+    }
 
     rc = cur_pid_full_path(self_path, PATH_MAX + 1);
     if (0 != rc) {

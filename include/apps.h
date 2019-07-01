@@ -1,0 +1,12 @@
+//
+// Created by Zhi Yan Liu on 2019-07-01.
+//
+
+#ifndef IROOTECH_DMP_RP_AGENT_APPS_H_
+#define IROOTECH_DMP_RP_AGENT_APPS_H_
+
+#define IROOTECH_DMP_RP_AGENT_APPS_DIR "apps"
+#define IROOTECH_DMP_RP_AGENT_APP_ROOT_DIR "rootfs"
+#define IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE "config.json"
+
+#endif //IROOTECH_DMP_RP_AGENT_APPS_H_

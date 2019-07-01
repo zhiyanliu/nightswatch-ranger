@@ -208,10 +208,12 @@ int op_update_dev_ca_entry(pjob_dispatch_param pparam) {
     unsigned char pkg_md5_src[MD5_SUM_LENGTH + 1], pkg_md5_dst[MD5_SUM_LENGTH + 1];
     int rc = 0;
 
+    // TODO(production): check free disk space, reject the operate if needed.
+
     rc = cur_pid_full_path(self_path, PATH_MAX + 1);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-                                  "{\"detail\":\"Failed to prepare execution.\"}");
+                "{\"detail\":\"Failed to prepare execution.\"}");
         return rc;
     }
 

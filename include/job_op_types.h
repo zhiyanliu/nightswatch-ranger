@@ -10,6 +10,7 @@ extern const char *JOB_OP_OTA_APP_PKG_STR;
 extern const char *JOB_OP_APP_PLUG_STR;
 extern const char *JOB_OP_UPDATE_APP_CFG_STR;
 extern const char *JOB_OP_REMOTE_OP_EXEC_STR;
-extern const char *JOB_OP_UPDATE_DEV_CA;
+extern const char *JOB_OP_UPDATE_DEV_CA_STR;
+extern const char *JOB_DEPLOY_APP_PKG_STR;
 
 #endif //IROOTECH_DMP_RP_AGENT_JOB_OP_TYPES_H_

@@ -11,6 +11,8 @@
 #define JOB_OPERATE_PROPERTY_NAME "operate"
 #define JOB_PKG_URL_PROPERTY_NAME "pkg_url"
 #define JOB_PKG_MD5_PROPERTY_NAME "pkg_md5"
+#define JOB_APP_NAME_PROPERTY_NAME "app_name"
+#define JOB_APP_ARGS_PROPERTY_NAME "app_args"
 
 
 typedef enum {
