@@ -102,24 +102,46 @@ static int parse_job_doc(pjob pj, char *app_name, size_t app_name_l, char *pkg_u
     return 0;
 }
 
-static int step1_download_pkg_file(pjob_dispatch_param pparam, char *work_dir_path,
-        char *app_home_path, size_t app_home_path_l, char *app_pkg_file_path, size_t app_pkg_file_path_l,
-        unsigned char *pkg_md5_dst, size_t pkg_md5_l, char *app_args, size_t app_args_l) {
+static int step1_check_app_deployed(pjob_dispatch_param pparam, char *app_name, size_t app_name_l,
+        char *pkg_url, size_t pkg_url_l, unsigned char *pkg_md5_dst, size_t pkg_md5_l,
+        char *app_args, size_t app_args_l) {
 
-    char cmd[PATH_MAX + 10] = {0}, app_name[4096], pkg_url[4096];
     int rc = 0;
+
+    rc = parse_job_doc(pparam->pj, app_name, app_name_l, pkg_url, pkg_url_l,
+            pkg_md5_dst, pkg_md5_l, app_args, app_args_l);
+    if (0 != rc) {
+        IOT_ERROR("failed to parse job doc for deploy application operation: %d", rc);
+        return rc;
+    }
+
+    rc = app_exists(app_name);
+    if (1 == rc) {
+        IOT_ERROR("application %s was deployed on this device already: %d", app_name, rc);
+        return rc;
+    }
+
+    return rc;
+}
+
+static int step2_download_pkg_file(pjob_dispatch_param pparam, char *pkg_url, unsigned char *pkg_md5_dst,
+        char *work_dir_path, char *app_name, char *app_home_path, size_t app_home_path_l,
+        char *app_pkg_file_path, size_t app_pkg_file_path_l) {
+
+    char cmd[PATH_MAX + 10] = {0};
+    int rc = 0;
+
+    if (NULL == work_dir_path)
+        return 1;
+
+    if (NULL == app_name)
+        return 1;
 
     if (NULL == app_home_path)
         return 1;
 
     if (NULL == app_pkg_file_path)
         return 1;
-
-    rc = parse_job_doc(pparam->pj, app_name, 4096, pkg_url, 4096, pkg_md5_dst, pkg_md5_l, app_args, app_args_l);
-    if (0 != rc) {
-        IOT_ERROR("failed to parse job doc for deploy application operation: %d", rc);
-        return rc;
-    }
 
     snprintf(app_home_path, app_home_path_l, "%s/%s/%s",
             work_dir_path, IROOTECH_DMP_RP_AGENT_APPS_DIR, app_name);
@@ -153,7 +175,7 @@ static int step1_download_pkg_file(pjob_dispatch_param pparam, char *work_dir_pa
     return rc;
 }
 
-static int step2_verify_pkg_md5sum(pjob_dispatch_param pparam,
+static int step3_verify_pkg_md5sum(pjob_dispatch_param pparam,
         char *app_pkg_file_path, size_t app_pkg_file_path_l,
         unsigned char *pkg_md5_src, unsigned char *pkg_md5_dst, size_t pkg_md5_l) {
 
@@ -167,7 +189,7 @@ static int step2_verify_pkg_md5sum(pjob_dispatch_param pparam,
         return rc;
     }
 
-    rc = md5_compare(pkg_md5_src, pkg_md5_dst, MD5_SUM_LENGTH + 1);
+    rc = md5_compare(pkg_md5_src, pkg_md5_dst, pkg_md5_l);
     if (0 != rc) {
         IOT_ERROR("failed to verify application package md5: expected: %s, actual: %.*s",
                   pkg_md5_dst, MD5_SUM_LENGTH, pkg_md5_src);
@@ -180,7 +202,7 @@ static int step2_verify_pkg_md5sum(pjob_dispatch_param pparam,
     return 0;
 }
 
-static int step3_extract_pkg_file(pjob_dispatch_param pparam, char *app_root_path, char *app_pkg_file_path) {
+static int step4_extract_pkg_file(pjob_dispatch_param pparam, char *app_root_path, char *app_pkg_file_path) {
     char cmd[PATH_MAX * 2 + 20] = {0};
     int rc = 0;
 
@@ -215,7 +237,7 @@ static int step3_extract_pkg_file(pjob_dispatch_param pparam, char *app_root_pat
     return rc;
 }
 
-static int step4_config_runc_spec(pjob_dispatch_param pparam, char *work_dir_path, char *app_home_path,
+static int step5_config_runc_spec(pjob_dispatch_param pparam, char *work_dir_path, char *app_home_path,
         char *app_args, char *app_spec_path, size_t app_spec_path_l) {
 
     // info(zhiyan): https://github.com/opencontainers/runtime-spec/blob/master/config-linux.md
@@ -248,28 +270,30 @@ static int step4_config_runc_spec(pjob_dispatch_param pparam, char *work_dir_pat
 }
 
 int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
-    char self_path[PATH_MAX + 1], work_dir_path[PATH_MAX + 1], app_home_path[PATH_MAX + 1],
-        app_pkg_file_path[PATH_MAX + 1], app_root_path[PATH_MAX + 1], app_args[PATH_MAX + 1],
-            app_spec_path[PATH_MAX + 1];
+    char work_dir_path[PATH_MAX + 1], app_name[PATH_MAX + 1], pkg_url[4096],
+        app_home_path[PATH_MAX + 1], app_pkg_file_path[PATH_MAX + 1], app_root_path[PATH_MAX + 1],
+        app_args[PATH_MAX + 1], app_spec_path[PATH_MAX + 1];
+
     unsigned char pkg_md5_src[MD5_SUM_LENGTH + 1], pkg_md5_dst[MD5_SUM_LENGTH + 1];
     int rc = 0;
 
     // TODO(production): check free disk space, reject the operate if needed.
 
-    rc = cur_pid_full_path(self_path, PATH_MAX + 1);
+    getcwd(work_dir_path, PATH_MAX + 1);
+
+    rc = step1_check_app_deployed(pparam, app_name, PATH_MAX + 1, pkg_url, 4096,
+            pkg_md5_dst, MD5_SUM_LENGTH + 1, app_args, PATH_MAX + 1);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-                "{\"detail\":\"Failed to prepare execution.\"}");
+                "{\"detail\":\"Application was deployed on this device already.\"}");
         return rc;
     }
-
-    getcwd(work_dir_path, PATH_MAX + 1);
 
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Downloading application package to the device.\"}");
 
-    rc = step1_download_pkg_file(pparam, work_dir_path, app_home_path, PATH_MAX + 1,
-            app_pkg_file_path, PATH_MAX + 1, pkg_md5_dst, MD5_SUM_LENGTH + 1, app_args, PATH_MAX + 1);
+    rc = step2_download_pkg_file(pparam, pkg_url, pkg_md5_dst, work_dir_path, app_name,
+            app_home_path, PATH_MAX + 1, app_pkg_file_path, PATH_MAX + 1);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to downloading application package.\"}");
@@ -279,7 +303,7 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Verifying the md5 of application package.\"}");
 
-    rc = step2_verify_pkg_md5sum(pparam, app_pkg_file_path, PATH_MAX + 1,
+    rc = step3_verify_pkg_md5sum(pparam, app_pkg_file_path, PATH_MAX + 1,
             pkg_md5_src, pkg_md5_dst, MD5_SUM_LENGTH + 1);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
@@ -292,7 +316,7 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
 
     snprintf(app_root_path, PATH_MAX + 1, "%s/%s", app_home_path, IROOTECH_DMP_RP_AGENT_APP_ROOT_DIR);
 
-    rc = step3_extract_pkg_file(pparam, app_root_path, app_pkg_file_path);
+    rc = step4_extract_pkg_file(pparam, app_root_path, app_pkg_file_path);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to extract application package.\"}");
@@ -302,7 +326,7 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Configure the container spec of application.\"}");
 
-    rc = step4_config_runc_spec(pparam, work_dir_path, app_home_path, app_args, app_spec_path, PATH_MAX + 1);
+    rc = step5_config_runc_spec(pparam, work_dir_path, app_home_path, app_args, app_spec_path, PATH_MAX + 1);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to configure the container spec of application.\"}");
@@ -310,6 +334,16 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
     }
 
     // TODO(production): book the locally deployed application info at somewhere.
+
+    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+            "{\"detail\":\"Deploy application container.\"}");
+
+    rc = app_deploy(app_name);
+    if (0 != rc) {
+        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+                "{\"detail\":\"Failed to deploy application container.\"}");
+        return rc;
+    }
 
     rc = dmp_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Application deployed.\"}");

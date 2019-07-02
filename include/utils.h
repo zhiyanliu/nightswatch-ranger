@@ -10,4 +10,6 @@
 
 int cur_pid_full_path(char *path, size_t path_l);
 
+size_t read_line(int fd, void *buffer, size_t n);
+
 #endif //IROOTECH_DMP_RP_AGENT_UTILS_H_

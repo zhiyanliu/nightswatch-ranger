@@ -133,7 +133,7 @@ static int step2_verify_pkg_md5sum(pjob_dispatch_param pparam,
         return rc;
     }
 
-    rc = md5_compare(pkg_md5_src, pkg_md5_dst, MD5_SUM_LENGTH + 1);
+    rc = md5_compare(pkg_md5_src, pkg_md5_dst, pkg_md5_l);
     if (0 != rc) {
         IOT_ERROR("failed to verify certs package md5: expected: %s, actual: %.*s",
                 pkg_md5_dst, MD5_SUM_LENGTH, pkg_md5_src);
