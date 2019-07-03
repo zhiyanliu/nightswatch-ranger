@@ -9,20 +9,24 @@
 #define IROOTECH_DMP_RP_AGENT_APP_ROOT_DIR "rootfs"
 #define IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE "config.json"
 #define IROOTECH_DMP_RP_AGENT_APP_RUNC "runc"
-#define IROOTECH_DMP_RP_AGENT_APP_CONSOLE_SOCK_DIR "console.socket"
+#define IROOTECH_DMP_RP_AGENT_APP_CONSOLE_SOCK_DIR "aconsole.socket"
 
 #include <stddef.h>
 #include <unistd.h>
+
+#include "aws_iot_mqtt_client_interface.h"
 
 
 typedef struct {
     char app_name[PATH_MAX + 1];
     int ctl_pipe_in[2], ctl_pipe_out[2]; // 0: r, 1: w;
+    AWS_IoT_Client *paws_iot_client;
 } app_event_ctlr_param, *papp_event_ctlr_param;
 
 typedef struct {
     char app_name[PATH_MAX + 1];
     int ctl_pipe_in[2], ctl_pipe_out[2]; // 0: r, 1: w;
+    AWS_IoT_Client *paws_iot_client;
 } app_log_ctlr_param, *papp_log_ctlr_param;
 
 
@@ -40,16 +44,16 @@ int app_runc_path(char *app_runc_path_v, size_t app_runc_path_l);
 
 int app_console_sock_path(char *console_sock_path_v, size_t console_sock_path_l, char *app_name);
 
-int app_log_ctrlr_param_create(char *app_name, papp_log_ctlr_param *ppparam);
+int app_log_ctrlr_param_create(char *app_name, AWS_IoT_Client *paws_iot_client, papp_log_ctlr_param *ppparam);
 
 int app_log_ctrlr_param_free(papp_log_ctlr_param pparam);
 
-int app_event_ctrlr_param_create(char *app_name, papp_event_ctlr_param *ppparam);
+int app_event_ctrlr_param_create(char *app_name, AWS_IoT_Client *paws_iot_client, papp_event_ctlr_param *ppparam);
 
 int app_event_ctrlr_param_free(papp_event_ctlr_param pparam);
 
 int app_exists(char *app_name);
 
-int app_deploy(char *app_name);
+int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client);
 
 #endif //IROOTECH_DMP_RP_AGENT_APPS_H_

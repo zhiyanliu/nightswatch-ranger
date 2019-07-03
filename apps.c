@@ -19,6 +19,7 @@
 #include <unistd.h>
 
 #include "aws_iot_log.h"
+#include "aws_iot_mqtt_client_interface.h"
 
 #include "utils.h"
 #include "apps.h"
@@ -169,7 +170,7 @@ int app_exists(char *app_name) {
     return !rc;
 }
 
-int app_log_ctrlr_param_create(char *app_name, papp_log_ctlr_param *ppparam) {
+int app_log_ctrlr_param_create(char *app_name, AWS_IoT_Client *paws_iot_client, papp_log_ctlr_param *ppparam) {
     int rc = 0;
 
     if (NULL == app_name)
@@ -189,6 +190,10 @@ int app_log_ctrlr_param_create(char *app_name, papp_log_ctlr_param *ppparam) {
         return rc;
 
     rc = pipe((*ppparam)->ctl_pipe_out);
+    if (0 != rc)
+        return rc;
+
+    (*ppparam)->paws_iot_client = paws_iot_client;
 
     return rc;
 }
@@ -208,7 +213,7 @@ int app_log_ctrlr_param_free(papp_log_ctlr_param pparam) {
     return 0;
 }
 
-int app_event_ctrlr_param_create(char *app_name, papp_event_ctlr_param *ppparam) {
+int app_event_ctrlr_param_create(char *app_name, AWS_IoT_Client *paws_iot_client, papp_event_ctlr_param *ppparam) {
     int rc = 0;
 
     if (NULL == app_name)
@@ -228,6 +233,10 @@ int app_event_ctrlr_param_create(char *app_name, papp_event_ctlr_param *ppparam)
         return rc;
 
     rc = pipe((*ppparam)->ctl_pipe_out);
+    if (0 != rc)
+        return rc;
+
+    (*ppparam)->paws_iot_client = paws_iot_client;
 
     return rc;
 }
@@ -356,8 +365,18 @@ static void* app_log_controller(void *p) {
     } else { // parent
         fd_set fds;
         int max_fd;
-        char log[2048];
         size_t read_len = 0;
+
+        IoT_Publish_Message_Params paramsQOS1;
+        char payload[4096], topic[50];
+        IoT_Error_t rc = SUCCESS;
+        int topic_l;
+
+        paramsQOS1.qos = QOS1;
+        paramsQOS1.payload = (void *)payload;
+        paramsQOS1.isRetained = 0;
+
+        topic_l = snprintf(topic, 50, "irootech-dmp/apps/%s/logs", pparam->app_name);
 
         close(fd[1]);
 
@@ -377,17 +396,38 @@ static void* app_log_controller(void *p) {
                     break; // doesn't make sense, re-listen
                 default:
                     if (FD_ISSET(fd[0], &fds)) {
-                        read_len = read(fd[0], log, 2048);
+                        read_len = read(fd[0], payload, 4096);
 
                         if (0 == read_len) { // EOF, container exits?
                             sleep(1); // defence
                             continue;
                         }
 
-                        // send to Cloud
-                        IOT_DEBUG("LOG (%d %d) ========> \"%s\"", read_len, errno, log);
+                        // TODO(production): 1) combine logs to save cost of MQTT calls; 2) json formation.
+
+                        paramsQOS1.payloadLen = read_len;
+
+                        // send the logs to Cloud
+                        do {
+                            rc = aws_iot_mqtt_publish(pparam->paws_iot_client, topic, topic_l, &paramsQOS1);
+                            if (rc == MQTT_REQUEST_TIMEOUT_ERROR) {
+                                IOT_WARN("application %s event QOS1 publish ack not received, ignored",
+                                        pparam->app_name);
+                                rc = SUCCESS;
+                            }
+
+                            if (MQTT_CLIENT_NOT_IDLE_ERROR == rc)
+                                usleep(500); // same as timeout of yield() in main thread loop
+                        } while (MQTT_CLIENT_NOT_IDLE_ERROR == rc ||
+                            NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc);
+
+                        if(SUCCESS != rc) {
+                            IOT_DEBUG("failed to publish application %s event: %d", pparam->app_name, rc);
+                        }
+
+                        IOT_DEBUG("application %s event published to topic %s", pparam->app_name, topic);
                     } else if (FD_ISSET(pparam->ctl_pipe_in[0], &fds)) { // control
-                        IOT_INFO("========= stop");
+                        IOT_INFO("application %s log controller stopped", pparam->app_name);
                         goto release;
                     }
             }
@@ -448,8 +488,18 @@ static void* app_event_controller(void *p) {
     } else { // parent
         fd_set fds;
         int max_fd;
-        char events[2048];
         size_t read_len = 0;
+
+        IoT_Publish_Message_Params paramsQOS1;
+        char payload[4096], topic[50];
+        IoT_Error_t rc = SUCCESS;
+        int topic_l;
+
+        paramsQOS1.qos = QOS1;
+        paramsQOS1.payload = (void *)payload;
+        paramsQOS1.isRetained = 0;
+
+        topic_l = snprintf(topic, 50, "irootech-dmp/apps/%s/events", pparam->app_name);
 
         close(fd[1]);
 
@@ -468,16 +518,37 @@ static void* app_event_controller(void *p) {
                     break; // doesn't make sense, re-listen
                 default:
                     if (FD_ISSET(fd[0], &fds)) {
-                        read_len = read_line(fd[0], events, 2048);
+                        read_len = read_line(fd[0], payload, 4096);
 
-                        if (0 == read_len) // EOF
+                        if (0 == read_len) { // EOF
                             // container doesn't provide event, e.g. not running
-                            sleep(2);
+                            sleep(1);
+                            continue;
+                        }
 
-                        // send to Cloud
-                        IOT_DEBUG("EVENTS (%d %d) ========> %s", read_len, errno, events);
+                        paramsQOS1.payloadLen = strlen(payload);
+
+                        // send the events to Cloud
+                        do {
+                            rc = aws_iot_mqtt_publish(pparam->paws_iot_client, topic, topic_l, &paramsQOS1);
+                            if (rc == MQTT_REQUEST_TIMEOUT_ERROR) {
+                                IOT_WARN("application %s event QOS1 publish ack not received, ignored",
+                                        pparam->app_name);
+                                rc = SUCCESS;
+                            }
+
+                            if (MQTT_CLIENT_NOT_IDLE_ERROR == rc)
+                                usleep(500); // same as timeout of yield() in main thread loop
+                        } while (MQTT_CLIENT_NOT_IDLE_ERROR == rc ||
+                            NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc);
+
+                        if(SUCCESS != rc) {
+                            IOT_DEBUG("failed to publish application %s event: %d", pparam->app_name, rc);
+                        }
+
+                        IOT_DEBUG("application %s event published to topic %s", pparam->app_name, topic);
                     } else if (FD_ISSET(pparam->ctl_pipe_in[0], &fds)) { // control
-                        IOT_INFO("========= stop")
+                        IOT_INFO("application %s event controller stopped", pparam->app_name);
                         goto release;
                     }
             }
@@ -490,7 +561,7 @@ release:
     return NULL; // rc == 0
 }
 
-int app_deploy(char *app_name) {
+int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client) {
     papp_log_ctlr_param pparam_log;
     papp_event_ctlr_param pparam_event;
 
@@ -500,7 +571,7 @@ int app_deploy(char *app_name) {
     if (NULL == app_name)
         return 1;
 
-    rc = app_log_ctrlr_param_create(app_name, &pparam_log);
+    rc = app_log_ctrlr_param_create(app_name, paws_iot_client, &pparam_log);
     if (0 != rc) {
         IOT_ERROR("failed to create log controller param for application %s: %d", app_name, rc);
         return rc;
@@ -521,7 +592,7 @@ int app_deploy(char *app_name) {
             return 1;
     }
 
-    rc = app_event_ctrlr_param_create(app_name, &pparam_event);
+    rc = app_event_ctrlr_param_create(app_name, paws_iot_client, &pparam_event);
     if (0 != rc) {
         IOT_ERROR("failed to create event controller param for application %s: %d", app_name, rc);
         return rc;

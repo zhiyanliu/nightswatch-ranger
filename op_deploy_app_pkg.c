@@ -338,7 +338,7 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Deploy application container.\"}");
 
-    rc = app_deploy(app_name);
+    rc = app_deploy(app_name, pparam->paws_iot_client);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to deploy application container.\"}");

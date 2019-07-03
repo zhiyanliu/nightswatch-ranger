@@ -4,12 +4,11 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
 
-#include "aws_iot_error.h"
 #include "aws_iot_jobs_interface.h"
-#include "aws_iot_jobs_types.h"
 #include "aws_iot_log.h"
-#include "aws_iot_mqtt_client.h"
+#include "aws_iot_mqtt_client_interface.h"
 
 #include "client.h"
 
@@ -37,8 +36,14 @@ IoT_Error_t dmp_dev_client_job_update(AWS_IoT_Client *paws_iot_client, char *thi
     req.includeJobDocument = false;
     req.clientToken = NULL;
 
-    rc = aws_iot_jobs_send_update(paws_iot_client, QOS1, thing_name, job_id, &req,
-            tpc_pub_update, MAX_JOB_TOPIC_LENGTH_BYTES, msg, sizeof(msg) / sizeof(char));
+    do {
+        rc = aws_iot_jobs_send_update(paws_iot_client, QOS1, thing_name, job_id, &req,
+                tpc_pub_update, MAX_JOB_TOPIC_LENGTH_BYTES, msg, sizeof(msg) / sizeof(char));
+
+        if (MQTT_CLIENT_NOT_IDLE_ERROR == rc)
+            usleep(500); // same as timeout of yield() in main thread loop
+    } while (MQTT_CLIENT_NOT_IDLE_ERROR == rc || NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc);
+
     if (SUCCESS != rc) {
         IOT_ERROR("failed to request updating job %s to %s status: %d", job_id, job_status, rc);
     }

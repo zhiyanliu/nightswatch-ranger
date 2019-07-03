@@ -3,6 +3,7 @@
 //
 
 #include <stdbool.h>
+#include <unistd.h>
 
 #include "aws_iot_error.h"
 #include "aws_iot_jobs_interface.h"
@@ -124,8 +125,11 @@ IoT_Error_t dmp_dev_client_job_loop(pdmp_dev_client pclient) {
 
     do {
         // max time the yield function will wait for read messages
-        rc = aws_iot_mqtt_yield(&pclient->c, 50000);
-    } while(SUCCESS == rc);
+        rc = aws_iot_mqtt_yield(&pclient->c, 500);
+        // yield() must be called at a rate faster than the keepalive interval and MQTT message incoming
+        sleep(2);
+    } while(SUCCESS == rc || MQTT_CLIENT_NOT_IDLE_ERROR == rc ||
+        NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc);
     
     return rc;
 }
