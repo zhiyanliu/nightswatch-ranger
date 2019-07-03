@@ -130,7 +130,9 @@ IoT_Error_t dmp_dev_client_job_loop(pdmp_dev_client pclient) {
         sleep(2);
     } while(SUCCESS == rc || MQTT_CLIENT_NOT_IDLE_ERROR == rc ||
         NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc);
-    
+
+    IOT_WARN("mqtt message handling loop existed: %d", rc);
+
     return rc;
 }
 

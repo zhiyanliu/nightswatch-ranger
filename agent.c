@@ -2,7 +2,9 @@
 // Created by Zhi Yan Liu on 2019-05-20.
 //
 
+#include <errno.h>
 #include <libgen.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,9 +13,11 @@
 #include "aws_iot_error.h"
 #include "aws_iot_log.h"
 
+#include "apps.h"
 #include "client.h"
 #include "certs.h"
 #include "flag.h"
+#include "funcs.h"
 #include "job_dispatch_bootstrap.h"
 #include "utils.h"
 #include "s3_http.h"
@@ -197,6 +201,12 @@ IoT_Error_t run(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id
     return rc;
 }
 
+void sig_handler(int signo)
+{
+    apps_send_signal(SIGKILL);
+    exit(0);
+}
+
 int main(int argc, char **argv) {
     pdmp_dev_client pclient = NULL;
     client_connect_ret conn_ret = CONN_FAILED;
@@ -206,16 +216,19 @@ int main(int argc, char **argv) {
 
     IOT_INFO("===============(pid: %d)===============", getpid());
 
-    rc = setuid(0);
+    rc = setuid(0) + setgid(0);
     if (0 != rc) {
         IOT_ERROR("need root permission, try sudo");
         return rc;
     }
 
-    rc = setgid(0);
-    if (0 != rc) {
-        IOT_ERROR("need root permission, try sudo");
-        return rc;
+    if (SIG_ERR == signal(SIGINT, sig_handler)) {
+        IOT_ERROR("could not catch signal SIGTERM");
+        return errno;
+    }
+    if (SIG_ERR == signal(SIGTERM, sig_handler)) {
+        IOT_ERROR("could not catch signal SIGTERM");
+        return errno;
     }
 
     rc = cur_pid_full_path(self_path, PATH_MAX + 1);
@@ -254,12 +267,21 @@ int main(int argc, char **argv) {
             IOT_INFO("client connected to the cloud successfully");
     }
 
+    rc = funcs_bootstrap(&pclient->c);
+    if (0 != rc) {
+        IOT_ERROR("failed to bootstrap functions: %d", rc);
+        goto release;
+    }
+
     s3_http_init();
 
     iot_rc = run(pclient, upd_dev_ca, upd_dev_ca_job_id, upd_dev_ca_works);
     if (SUCCESS != iot_rc)
         IOT_ERROR("failed to run client: %d", iot_rc);
 
+    funcs_shutdown();
+
+release:
     s3_http_free();
 
     dmp_dev_client_free(pclient);

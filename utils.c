@@ -3,7 +3,6 @@
 //
 
 #include <errno.h>
-#include <stdio.h>
 #if defined(__linux__)
   #include <linux/limits.h>
   #include <unistd.h>
@@ -12,6 +11,8 @@
   #include <mach-o/dyld.h>
   #include <sys/syslimits.h>
 #endif
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "utils.h"
 
@@ -79,4 +80,30 @@ size_t read_line(int fd, void *buffer, size_t n)
 
     *buf = '\0';
     return read_total;
+}
+
+char* read_str_file(char *path, int *len)
+{
+    FILE *f;
+    char *data;
+
+    f = fopen(path, "rb");
+    if (NULL == f)
+        return NULL;
+
+    fseek(f, 0, SEEK_END);
+    *len = ftell(f);
+
+    data = (char*)malloc((*len + 1) * sizeof(char));
+    if (NULL == data) {
+        fclose(f);
+        return NULL;
+    }
+
+    rewind(f);
+    *len = fread(data, 1, *len, f);
+    data[*len] = '\0';
+
+    fclose(f);
+    return data;
 }

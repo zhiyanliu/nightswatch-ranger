@@ -153,5 +153,7 @@ static void disconnect_callback_handler(AWS_IoT_Client *pclient, void *data) {
             IOT_WARN("manual reconnect failed: %d", rc);
         }
     }
+
+
 }
 

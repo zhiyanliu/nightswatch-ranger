@@ -144,9 +144,6 @@
 				"type": "pid"
 			},
 			{
-				"type": "network"
-			},
-			{
 				"type": "ipc"
 			},
 			{
