@@ -42,7 +42,9 @@ IoT_Error_t dmp_dev_client_job_update(AWS_IoT_Client *paws_iot_client, char *thi
 
         if (MQTT_CLIENT_NOT_IDLE_ERROR == rc)
             usleep(500); // same as timeout of yield() in main thread loop
-    } while (MQTT_CLIENT_NOT_IDLE_ERROR == rc || NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc);
+    } while (MQTT_CLIENT_NOT_IDLE_ERROR == rc ||
+        NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc ||\
+        MQTT_REQUEST_TIMEOUT_ERROR == rc);
 
     if (SUCCESS != rc) {
         IOT_ERROR("failed to request updating job %s to %s status: %d", job_id, job_status, rc);

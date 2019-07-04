@@ -492,7 +492,8 @@ static void* app_log_controller(void *p) {
                             if (MQTT_CLIENT_NOT_IDLE_ERROR == rc)
                                 usleep(500); // same as timeout of yield() in main thread loop
                         } while (MQTT_CLIENT_NOT_IDLE_ERROR == rc ||
-                            NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc);
+                            NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc ||
+                            MQTT_REQUEST_TIMEOUT_ERROR == rc);
 
                         if(SUCCESS != rc) {
                             IOT_DEBUG("failed to publish application %s log: %d", pparam->app_name, rc);
@@ -599,7 +600,8 @@ static void* app_event_controller(void *p) {
                             if (MQTT_CLIENT_NOT_IDLE_ERROR == rc)
                                 usleep(500); // same as timeout of yield() in main thread loop
                         } while (MQTT_CLIENT_NOT_IDLE_ERROR == rc ||
-                            NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc);
+                            NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc ||
+                            MQTT_REQUEST_TIMEOUT_ERROR == rc);
 
                         if(SUCCESS != rc) {
                             IOT_DEBUG("failed to publish application %s event: %d", pparam->app_name, rc);
