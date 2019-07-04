@@ -5,7 +5,6 @@
 #include <errno.h>
 #if defined(__linux__)
   #include <linux/limits.h>
-  #include <unistd.h>
   #include <sys/types.h>
 #elif defined(__APPLE__)
   #include <mach-o/dyld.h>
@@ -13,6 +12,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "utils.h"
 
@@ -39,8 +39,8 @@ int cur_pid_full_path(char *path, size_t path_l) {
 
 size_t read_line(int fd, void *buffer, size_t n)
 {
-    size_t read_len; /* # of bytes fetched by last read() */
-    size_t read_total; /* total bytes read so far */
+    int read_len; /* # of bytes fetched by last read() */
+    int read_total; /* total bytes read so far */
     char *buf;
     char ch;
 

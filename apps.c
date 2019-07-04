@@ -314,6 +314,8 @@ int app_event_ctrlr_param_free(papp_event_ctlr_param pparam) {
     close(pparam->ctl_pipe_out[1]);
 
     free(pparam);
+
+    return 0;
 }
 
 // unused console way, currently
