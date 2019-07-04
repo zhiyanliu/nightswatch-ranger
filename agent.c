@@ -214,6 +214,10 @@ int main(int argc, char **argv) {
     int rc = 0, pd_dev_ca = 0, upd_dev_ca = 0, upd_dev_ca_works = 1;
     char *upd_dev_ca_job_id = NULL, self_path[PATH_MAX + 1];
 
+    // disable buffering for logging
+    setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stderr, NULL, _IONBF, 0);
+
     IOT_INFO("===============(pid: %d)===============", getpid());
 
     rc = setuid(0) + setgid(0);
@@ -223,7 +227,7 @@ int main(int argc, char **argv) {
     }
 
     if (SIG_ERR == signal(SIGINT, sig_handler)) {
-        IOT_ERROR("could not catch signal SIGTERM");
+        IOT_ERROR("could not catch signal SIGINT");
         return errno;
     }
     if (SIG_ERR == signal(SIGTERM, sig_handler)) {

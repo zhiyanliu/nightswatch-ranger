@@ -336,7 +336,7 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
     // TODO(production): book the locally deployed application info at somewhere.
 
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-            "{\"detail\":\"Deploy application container.\"}");
+            "{\"detail\":\"Deploying application container.\"}");
 
     rc = app_deploy(app_name, pparam->paws_iot_client);
     if (0 != rc) {

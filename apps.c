@@ -412,6 +412,8 @@ static void* app_log_controller(void *p) {
         close(fd[0]);
         close(fd[1]);
 
+        setvbuf(stdout, NULL, _IOLBF, 0);
+
         execlp(app_runc_path_v, app_runc_path_v, "run", "--bundle", app_home_path_v, "--pid-file",
                app_container_pid_path_v, pparam->app_name, NULL);
     } else { // parent
@@ -542,6 +544,8 @@ static void* app_event_controller(void *p) {
         dup2(fd[1], STDOUT_FILENO);
         close(fd[0]);
         close(fd[1]);
+
+        setvbuf(stdout, NULL, _IOLBF, 0);
 
         // stats collection interval default: 5s
         execlp(app_runc_path_v, app_runc_path_v, "events", pparam->app_name, NULL);
