@@ -218,6 +218,8 @@ static int step4_extract_pkg_file(pjob_dispatch_param pparam, char *app_root_pat
         return rc;
     }
 
+    IOT_DEBUG("extract application package %s to %s", app_pkg_file_path, app_root_path);
+
     snprintf(cmd, PATH_MAX * 2 + 20, "tar zxf %s -C %s", app_pkg_file_path, app_root_path);
     // the package created by this kind of command:
     //   docker export $(docker create busybox) | tar -C rootfs -xvf -

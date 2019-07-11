@@ -16,6 +16,7 @@
 #include "aws_iot_json_utils.h"
 #include "aws_iot_log.h"
 
+#include "apps.h"
 #include "aws_iot_config.h"
 #include "certs.h"
 #include "client.h"
@@ -191,7 +192,11 @@ static int step4_switch_certs_par(pjob_dispatch_param pparam, char *target_file_
 static int step5_restart_app(pjob_dispatch_param pparam, char *self_path, char *alter_par_name) {
     int rc = 0;
 
+    IOT_DEBUG("shutdown functions");
     funcs_shutdown();
+
+    IOT_DEBUG("stop all applications");
+    apps_kill();
 
     IOT_INFO("restarting the application, switch to using new certs");
 

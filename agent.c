@@ -203,7 +203,7 @@ IoT_Error_t run(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id
 
 void sig_handler(int signo)
 {
-    apps_send_signal(SIGKILL);
+    apps_kill();
     exit(0);
 }
 

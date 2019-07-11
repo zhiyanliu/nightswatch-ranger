@@ -680,16 +680,22 @@ int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client) {
 
 int apps_send_signal(int signo) {
     size_t i = 0;
-    int pid = -1;
+    int pid = -1, rc = 0;
 
     for (i = 0; i < apps_deployed_pid_l; i++) {
         pid = apps_deployed_pid_v[i];
 
         if (0 < pid) {
-            IOT_DEBUG("send signal %d to pid %d", signo, pid);
-            kill(pid, signo);
+            do {
+                IOT_DEBUG("send signal %d to pid %d", signo, pid);
+                rc = kill(pid, signo);
+            } while (0 != rc && ESRCH != errno); // ESRCH means pid does not exist.
         }
     }
 
     return 0;
+}
+
+int apps_kill() {
+    return apps_send_signal(SIGKILL);
 }

@@ -11,7 +11,7 @@
 #include "aws_iot_mqtt_client_interface.h"
 
 
-#define IROOTECH_DMP_RP_AGENT_APPS_DIR "apps"
+#define IROOTECH_DMP_RP_AGENT_APPS_DIR "../../apps"
 #define IROOTECH_DMP_RP_AGENT_APP_ROOT_DIR "rootfs"
 #define IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE "config.json"
 #define IROOTECH_DMP_RP_AGENT_APP_RUNC "runc"
@@ -61,5 +61,7 @@ int app_exists(char *app_name);
 int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client);
 
 int apps_send_signal(int signo);
+
+int apps_kill();
 
 #endif //IROOTECH_DMP_RP_AGENT_APPS_H_
