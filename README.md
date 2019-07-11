@@ -64,7 +64,8 @@ Build supports follow 6 targets currently, e.g. you can execute `make libawsiot.
 1. `aws-iot-device-sdk-embedded-C` Get AWS IoT SDK vendor package.
 2. `libawsiot.a` Compile AWS IoT SDK static library.
 3. `dmpagent` Compile and link DMP agent binary.
-4. `all` Currently it does `dmpagent` target only.
+4. `install` Install agent binary to bin directory with dual partitions structure of agent OTA.
+4. `all` Currently it does `install` target only. Default target.
 5. `vendor_clean` Remove local AWS IoT SDK vendor package and compiled static library.
 6. `clean` Remove all output files of last build, prepare for next complete and clean DMP agent build.
 
@@ -120,7 +121,9 @@ export https_proxy=$http_proxy
 ```
 ### Dependencies
 
-- `unzip`: install it on Ubuntu by ``apt-get install unzip``.
+- `unzip`: If you need DMP agent supports Certificate and Agent OTA opertion. Install it on Ubuntu by ``apt-get install unzip``.
+- `tar`: If you need DMP agent supports Application Deployment operation.
+- `runc`: If you need DMP agent supports Application Deployment operation. Refer RUNC at [here](https://github.com/opencontainers/runc).
 
 ## Troubleshooting
 
