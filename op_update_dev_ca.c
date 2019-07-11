@@ -192,12 +192,6 @@ static int step4_switch_certs_par(pjob_dispatch_param pparam, char *target_file_
 static int step5_restart_app(pjob_dispatch_param pparam, char *self_path, char *alter_par_name) {
     int rc = 0;
 
-    IOT_DEBUG("shutdown functions");
-    funcs_shutdown();
-
-    IOT_DEBUG("stop all applications");
-    apps_kill();
-
     IOT_INFO("restarting the application, switch to using new certs");
 
     rc = execl(self_path, self_path, "--upd_dev_ca_job_id", pparam->pj->job_id,
@@ -268,7 +262,14 @@ int op_update_dev_ca_entry(pjob_dispatch_param pparam) {
     }
 
     // TODO(production): wait all ongoing executions on the device finish.
-    // TODO(production): close all resources, e.g. opened fd.
+
+    IOT_DEBUG("shutdown functions");
+    funcs_shutdown();
+
+    IOT_DEBUG("stop all applications");
+    apps_kill();
+
+    // TODO(production): close other resources, e.g. opened fd.
 
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                            "{\"detail\":\"Restarting device application to apply new certs.\"}");
