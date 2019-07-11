@@ -182,6 +182,7 @@ static void* func_router_io_worker(void *p) {
     while (1) {
         read_l = read_line(pparam->conn_fd, payload, 4096);
         if (0 == read_l) { // EOF
+            IOT_INFO("router IO worker exists due to application: %s ends", app_name);
             rc = 0;
             break;
         } else if (-1 == read_l) {

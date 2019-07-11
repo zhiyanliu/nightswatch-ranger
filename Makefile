@@ -14,6 +14,7 @@ DEBUG = @
 
 SDK_NAME = awsiot
 APP_NAME = dmpagent
+APP_ENTRY = agent
 
 APP_DIR = .
 
@@ -103,10 +104,20 @@ $(APP_NAME): lib$(SDK_NAME).a $(APP_SRC_FILES)
 	$(DEBUG)$(MAKE_APP_CMD)
 	$(POST_MAKE_APP_CMD)
 
-all: $(APP_NAME)
+$(APP_ENTRY): $(APP_NAME)
+	mkdir -p bin/p1
+	mkdir -p bin/p2
+	cp -f $(APP_NAME) bin/p1/$(APP_NAME)
+	ln -fs bin/p1/$(APP_NAME) $(APP_ENTRY)
+
+install: $(APP_ENTRY)
+
+all: install
 
 clean:
 	rm -f *.o
 	rm -f lib$(SDK_NAME).a
 	rm -f $(APP_NAME)
+	rm -rf bin
+	rm -r $(APP_ENTRY)
 	-$(MBED_TLS_MAKE_CMD) clean

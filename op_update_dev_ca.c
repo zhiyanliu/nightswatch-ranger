@@ -19,6 +19,7 @@
 #include "aws_iot_config.h"
 #include "certs.h"
 #include "client.h"
+#include "funcs.h"
 #include "job_dispatch.h"
 #include "job_parser.h"
 #include "md5_calc.h"
@@ -189,6 +190,8 @@ static int step4_switch_certs_par(pjob_dispatch_param pparam, char *target_file_
 
 static int step5_restart_app(pjob_dispatch_param pparam, char *self_path, char *alter_par_name) {
     int rc = 0;
+
+    funcs_shutdown();
 
     IOT_INFO("restarting the application, switch to using new certs");
 

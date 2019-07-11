@@ -1,9 +1,11 @@
+agent
 dmpagent
 aws-iot-device-sdk-embedded-C
 
 *.o
 *.a
 lib_obj/
+bin/
 
 .idea/
 .DS_Store
