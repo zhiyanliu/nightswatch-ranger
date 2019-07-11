@@ -10,10 +10,10 @@
 
 #include "op_deploy_app_pkg.h"
 #include "op_ota_sys_pkg.h"
-#include "op_ota_app_pkg.h"
-#include "op_ota_app_plug.h"
+#include "op_ota_agent_pkg.h"
+#include "op_ota_agent_plug.h"
 #include "op_remote_op_exec.h"
-#include "op_update_app_cfg.h"
+#include "op_update_agent_cfg.h"
 #include "op_update_dev_ca.h"
 
 
@@ -23,6 +23,10 @@ pjob_dispatcher job_dispatcher_bootstrap() {
     // System package OTA operation
     job_dispatcher_reg_executor(&job_dispatcher_default,
             JOB_OP_OTA_SYS_PKG_STR, strlen(JOB_OP_OTA_SYS_PKG_STR) + 1, op_ota_sys_pkg_entry);
+
+    // Agent package OTA operation
+    job_dispatcher_reg_executor(&job_dispatcher_default,
+            JOB_OP_OTA_AGENT_PKG_STR, strlen(JOB_OP_OTA_AGENT_PKG_STR) + 1, op_ota_agent_pkg_entry);
 
     // Device certificate update operation
     job_dispatcher_reg_executor(&job_dispatcher_default,

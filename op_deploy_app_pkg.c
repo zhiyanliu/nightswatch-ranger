@@ -166,7 +166,7 @@ static int step2_download_pkg_file(pjob_dispatch_param pparam, char *pkg_url, un
 
     rc = s3_http_download(pkg_url, app_pkg_file_path);
     if (0 != rc) {
-        IOT_ERROR("failed to download package: %d", rc);
+        IOT_ERROR("failed to download application package: %d", rc);
         return rc;
     }
 
