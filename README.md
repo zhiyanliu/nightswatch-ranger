@@ -59,15 +59,16 @@ As a C lang project, it needs Build tool and GCC toolchain to compile and link t
 
 #### Advanced
 
-Build supports follow 6 targets currently, e.g. you can execute `make libawsiot.a` to build AWS IoT SDK library only.
+Build supports follow 8 targets currently, e.g. you can execute `make libawsiot.a` to build AWS IoT SDK library only.
 
 1. `aws-iot-device-sdk-embedded-C` Get AWS IoT SDK vendor package.
 2. `libawsiot.a` Compile AWS IoT SDK static library.
 3. `dmpagent` Compile and link DMP agent binary.
-4. `install` Install agent binary to bin directory with dual partitions structure of agent OTA.
-4. `all` Currently it does `install` target only. Default target.
-5. `vendor_clean` Remove local AWS IoT SDK vendor package and compiled static library.
-6. `clean` Remove all output files of last build, prepare for next complete and clean DMP agent build.
+4. `nightwatch` Compile and link DMP agent OTA helper binary.
+5. `install` Install agent binary to bin directory with dual partitions structure of agent OTA.
+6. `all` Currently it does `install` target only. Default target.
+7. `vendor_clean` Remove local AWS IoT SDK vendor package and compiled static library.
+8. `clean` Remove all output files of last build, prepare for next complete and clean DMP agent build.
 
 >>**Note:**
 >>
