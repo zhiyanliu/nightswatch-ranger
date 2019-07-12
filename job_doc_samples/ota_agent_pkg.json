@@ -1,0 +1,6 @@
+{
+  "operate": "ota_agent_pkg",
+  "pkg_url": "${aws:iot:s3-presigned-url:https://s3.amazonaws.com/liuzhiyan-irootech-dmp-rp/ota_agent_pkg.zip}",
+  "pkg_md5": "8b4c378f57a63b1bbf341ec9dc5c78b4",
+  "agent_ver": "v0.1.0"
+}

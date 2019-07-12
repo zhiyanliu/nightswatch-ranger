@@ -31,7 +31,7 @@ typedef enum {
     CERTS_ERROR = -4
 } client_connect_ret;
 
-int to_update_dev_ca(int argc, char **argv, char **upd_dev_ca_job_id) {
+static int to_update_dev_ca(int argc, char **argv, char **upd_dev_ca_job_id) {
     int rc = 0;
     char *flag_ca_par_name, cur_par_name[PATH_MAX + 1];
 
@@ -59,7 +59,7 @@ int to_update_dev_ca(int argc, char **argv, char **upd_dev_ca_job_id) {
     return 1;
 }
 
-IoT_Error_t _client_connect(pdmp_dev_client *ppclient) {
+static IoT_Error_t _client_connect(pdmp_dev_client *ppclient) {
     char cur_par_name[PATH_MAX + 1];
     IoT_Error_t iot_rc = FAILURE;
     int rc = 0;
@@ -95,7 +95,7 @@ IoT_Error_t _client_connect(pdmp_dev_client *ppclient) {
     return iot_rc;
 }
 
-client_connect_ret client_connect(pdmp_dev_client *ppclient, IoT_Error_t *iot_rc, int upd_dev_ca) {
+static client_connect_ret client_connect(pdmp_dev_client *ppclient, IoT_Error_t *iot_rc, int upd_dev_ca) {
     int rc = 0;
 
     IOT_DEBUG("connecting to AWS IoT Core: %s:%d", AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
@@ -138,7 +138,7 @@ client_connect_ret client_connect(pdmp_dev_client *ppclient, IoT_Error_t *iot_rc
     return CERTS_FALLBACK_CONN_SUCCESS;
 }
 
-IoT_Error_t run(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id, int upd_dev_ca_works) {
+static IoT_Error_t run(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id, int upd_dev_ca_works) {
     IoT_Error_t rc = FAILURE;
     pjob_dispatcher pdispatcher = job_dispatcher_bootstrap();
 
@@ -213,7 +213,7 @@ int main(int argc, char **argv) {
     pdmp_dev_client pclient = NULL;
     client_connect_ret conn_ret = CONN_FAILED;
     IoT_Error_t iot_rc = FAILURE;
-    int rc = 0, pd_dev_ca = 0, upd_dev_ca = 0, upd_dev_ca_works = 1;
+    int rc = 0, upd_dev_ca = 0, upd_dev_ca_works = 1;
     char *upd_dev_ca_job_id = NULL, self_path[PATH_MAX + 1];
 
     // disable buffering for logging
@@ -257,7 +257,7 @@ int main(int argc, char **argv) {
 
     upd_dev_ca = to_update_dev_ca(argc, argv, &upd_dev_ca_job_id);
     if (upd_dev_ca)
-        IOT_DEBUG("application continues to apply new certs, job id: %s", upd_dev_ca_job_id);
+        IOT_DEBUG("agent continues to apply new certs, job id: %s", upd_dev_ca_job_id);
 
     conn_ret = client_connect(&pclient, &iot_rc, upd_dev_ca);
     switch (conn_ret) {

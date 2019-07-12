@@ -1,5 +1,6 @@
 agent
 dmpagent
+nightwatch
 aws-iot-device-sdk-embedded-C
 
 *.o
