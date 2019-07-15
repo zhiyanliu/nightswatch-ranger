@@ -77,10 +77,11 @@ int certs_cur_par_name(char *par_name, size_t par_name_l) {
 }
 
 int certs_get_free_par_dir(char *file_path, size_t file_path_l, char *file_name, size_t file_name_l) {
-    char cur_par_name[PATH_MAX + 1], work_dir_path[PATH_MAX + 1], *par_name = NULL;
+    char cur_par_name[IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_NAME_LEN + 1],
+        work_dir_path[PATH_MAX + 1], *par_name = NULL;
     int rc = 0;
 
-    rc = certs_cur_par_name(cur_par_name, PATH_MAX + 1);
+    rc = certs_cur_par_name(cur_par_name, IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_NAME_LEN + 1);
     if (0 != rc)
         return rc;
 
@@ -145,10 +146,10 @@ int certs_switch_par(char *new_file_path, size_t new_file_path_l, char *new_file
 }
 
 int certs_check_par_link() {
-    char cur_par_name[PATH_MAX + 1];
+    char cur_par_name[IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_NAME_LEN + 1];
     int rc = 0;
 
-    rc = certs_cur_par_name(cur_par_name, PATH_MAX + 1);
+    rc = certs_cur_par_name(cur_par_name, IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_NAME_LEN + 1);
     if (0 != rc)
         return rc;
 

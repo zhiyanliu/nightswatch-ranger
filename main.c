@@ -14,6 +14,7 @@
 #include "aws_iot_log.h"
 
 #include "apps.h"
+#include "agent.h"
 #include "client.h"
 #include "certs.h"
 #include "flag.h"
@@ -53,6 +54,37 @@ int to_update_dev_ca(int argc, char **argv, char **upd_dev_ca_job_id) {
     if (0 != rc) {
         IOT_WARN("invalid flag of certs partition name provided, current: %s, flag: %s, skip update device certs",
                  cur_par_name, flag_ca_par_name);
+        return 0;
+    }
+
+    return 1;
+}
+
+int to_ota_agent_pkg(int argc, char **argv, char **ota_agent_pkg_job_id, char **ota_agent_pkg_ver) {
+    int rc = 0;
+    char *flag_agent_par_name, cur_par_name[PATH_MAX + 1];
+
+    if (NULL == ota_agent_pkg_job_id)
+        return 0;
+
+    if (NULL == ota_agent_pkg_ver)
+        return 0;
+
+    rc = flagged_ota_agent_pkg(argc, argv, ota_agent_pkg_job_id, &flag_agent_par_name, ota_agent_pkg_ver);
+    if (0 == rc) { // flag not provided
+        return 0;
+    }
+
+    rc = agent_cur_par_name(cur_par_name, PATH_MAX + 1);
+    if (0 != rc) {
+        IOT_ERROR("failed to get current agent partition name: %d", rc);
+        return 0;
+    }
+
+    rc = strncmp(cur_par_name, flag_agent_par_name, PATH_MAX + 1);
+    if (0 != rc) {
+        IOT_WARN("invalid flag of agent partition name provided, current: %s, flag: %s, skip update device agent",
+                cur_par_name, flag_agent_par_name);
         return 0;
     }
 
@@ -213,8 +245,8 @@ int main(int argc, char **argv) {
     pdmp_dev_client pclient = NULL;
     client_connect_ret conn_ret = CONN_FAILED;
     IoT_Error_t iot_rc = FAILURE;
-    int rc = 0, pd_dev_ca = 0, upd_dev_ca = 0, upd_dev_ca_works = 1;
-    char *upd_dev_ca_job_id = NULL, self_path[PATH_MAX + 1];
+    int rc = 0, upd_dev_ca = 0, upd_dev_ca_works = 1, ota_agent_pkg = 0;
+    char self_path[PATH_MAX + 1], *upd_dev_ca_job_id = NULL, *ota_agent_pkg_job_id = NULL, *ota_agent_ver = NULL;
 
     // disable buffering for logging
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -270,6 +302,18 @@ int main(int argc, char **argv) {
             upd_dev_ca_works = 0;
         case CONN_SUCCESS:
             IOT_INFO("client connected to the cloud successfully");
+    }
+
+    ota_agent_pkg = to_ota_agent_pkg(argc, argv, &ota_agent_pkg_job_id, &ota_agent_ver);
+    if (ota_agent_pkg) {
+        // suppose "agent_ver" property in job document equals IROOTECH_DMP_RP_AGENT_VER in program, maybe need a check
+        IOT_DEBUG("application continues to apply new agent, version: %s, job id: %s",
+                ota_agent_ver, ota_agent_pkg_job_id);
+
+        rc = dmp_dev_client_job_done(&pclient->c, pclient->thing_name, ota_agent_pkg_job_id,
+                "{\"detail\":\"Device connected to the client using new agent.\"}");
+
+        IOT_INFO("update agent to version %s successfully, job id: %s", ota_agent_ver, ota_agent_pkg_job_id);
     }
 
     rc = funcs_bootstrap(&pclient->c);

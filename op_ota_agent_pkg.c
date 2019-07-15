@@ -9,6 +9,7 @@
 #include <sys/syslimits.h>
 #endif
 #include <stddef.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -26,6 +27,7 @@
 #include "md5_calc.h"
 #include "s3_http.h"
 #include "utils.h"
+#include "version.h"
 
 /*
  * we handle job message one by one, no concurrent process.
@@ -36,9 +38,11 @@ static jsmntok_t _json_tok_v[MAX_JSON_TOKEN_EXPECTED];
 static int32_t _token_c;
 
 
-static int parse_job_doc(pjob pj, char *pkg_url, size_t pkg_url_l, unsigned char *pkg_md5, size_t pkg_md5_l) {
+static int parse_job_doc(pjob pj, char *pkg_url, size_t pkg_url_l, unsigned char *pkg_md5, size_t pkg_md5_l,
+        char *agent_ver, size_t agent_ver_l) {
+
     IoT_Error_t rc = FAILURE;
-    jsmntok_t *tok_pkg_url, *tok_pkg_md5;
+    jsmntok_t *tok_pkg_url, *tok_pkg_md5, *tok_agent_ver;
 
     jsmn_init(&_json_parser);
     _token_c = jsmn_parse(&_json_parser, pj->job_doc, (int)pj->job_doc_l,
@@ -60,6 +64,12 @@ static int parse_job_doc(pjob pj, char *pkg_url, size_t pkg_url_l, unsigned char
         return 3;
     }
 
+    tok_agent_ver = findToken(JOB_AGENT_VERSION_PROPERTY_NAME, pj->job_doc, _json_tok_v);
+    if (NULL == tok_pkg_md5) {
+        IOT_WARN("agent version property %s not found, nothing to do", JOB_AGENT_VERSION_PROPERTY_NAME);
+        return 4;
+    }
+
     rc = parseStringValue(pkg_url, pkg_url_l, pj->job_doc, tok_pkg_url);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to parse job package url: %d", rc);
@@ -72,14 +82,19 @@ static int parse_job_doc(pjob pj, char *pkg_url, size_t pkg_url_l, unsigned char
         return rc;
     }
 
+    rc = parseStringValue((char*)agent_ver, agent_ver_l, pj->job_doc, tok_agent_ver);
+    if (SUCCESS != rc) {
+        IOT_ERROR("failed to parse agent version: %d", rc);
+        return rc;
+    }
+
     return 0;
 }
 
 static int step1_download_pkg_file(pjob_dispatch_param pparam, char *alter_par_path, size_t alter_par_path_l,
-        char *alter_agent_pkg_file_path, size_t alter_agentpkg_file_path_l,
-        unsigned char *pkg_md5_dst, size_t pkg_md5_l) {
+        char *alter_agent_pkg_file_path, size_t alter_agentpkg_file_path_l, char *pkg_url,
+        unsigned char *pkg_md5_dst, char *agent_ver) {
 
-    char pkg_url[4096];
     int rc = 0;
 
     if (NULL == alter_par_path)
@@ -87,12 +102,6 @@ static int step1_download_pkg_file(pjob_dispatch_param pparam, char *alter_par_p
 
     if (NULL == alter_agent_pkg_file_path)
         return 1;
-
-    rc = parse_job_doc(pparam->pj, pkg_url, 4096, pkg_md5_dst, pkg_md5_l);
-    if (0 != rc) {
-        IOT_ERROR("failed to parse job doc for update agent operate: %d", rc);
-        return rc;
-    }
 
     rc = agent_get_free_par_dir(alter_par_path, alter_par_path_l, NULL, 0);
     if (0 != rc) {
@@ -189,19 +198,19 @@ static int step4_switch_agent_par(pjob_dispatch_param pparam, char *target_file_
     return rc;
 }
 
-static int step5_restart_agent(pjob_dispatch_param pparam, char *alter_par_name) {
+static int step5_restart_agent(pjob_dispatch_param pparam, char *alter_par_name, char *agent_ver) {
     int rc = 0;
     char work_dir_path[PATH_MAX + 1], agent_path[PATH_MAX + 1];
 
     getcwd(work_dir_path, PATH_MAX + 1);
 
     snprintf(agent_path, PATH_MAX + 1, "%s/%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_AGENT_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
+            work_dir_path, IROOTECH_DMP_RP_AGENT_HOME_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
 
     IOT_INFO("restarting the agent, switch to using new version");
 
     rc = execl(agent_path, agent_path, "--ota_agent_pkg_job_id", pparam->pj->job_id,
-            "--ota_agent_pkg_par_name", alter_par_name, NULL);
+            "--ota_agent_pkg_par_name", alter_par_name, "--ota_agent_ver_name", agent_ver, NULL);
     if (0 != rc) {
         IOT_ERROR("[CRITICAL] failed to restart myself: %d", errno);
         return rc;
@@ -212,9 +221,26 @@ static int step5_restart_agent(pjob_dispatch_param pparam, char *alter_par_name)
 
 int op_ota_agent_pkg_entry(pjob_dispatch_param pparam) {
     char alter_par_path[PATH_MAX + 1], alter_par_name[PATH_MAX + 1],
-            alter_agent_pkg_file_path[PATH_MAX + 1];
+            alter_agent_pkg_file_path[PATH_MAX + 1], agent_ver[IROOTECH_DMP_RP_AGENT_AGENT_VERSION_LEN], pkg_url[4096];
     unsigned char pkg_md5_src[MD5_SUM_LENGTH + 1], pkg_md5_dst[MD5_SUM_LENGTH + 1];
     int rc = 0;
+
+    rc = parse_job_doc(pparam->pj, pkg_url, 4096, pkg_md5_dst, MD5_SUM_LENGTH + 1,
+            agent_ver, IROOTECH_DMP_RP_AGENT_AGENT_VERSION_LEN);
+    if (0 != rc) {
+        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+                "{\"detail\":\"Failed to parse agent update job document.\"}");
+        return rc;
+    }
+
+    rc = strcmp(agent_ver, IROOTECH_DMP_RP_AGENT_VER);
+    if (0 == rc) { // powered off during restart in last update operate? or wrong device target for the job
+        IOT_WARN("device is already using new agent version %s, skip update and set job to success directly",
+                agent_ver);
+        dmp_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+                "{\"detail\":\"Device connected to the client using new agent.\"}");
+        return rc;
+    }
 
     // TODO(production): check free disk space, reject the operate if needed.
 
@@ -222,7 +248,7 @@ int op_ota_agent_pkg_entry(pjob_dispatch_param pparam) {
             "{\"detail\":\"Downloading new agent package to update.\"}");
 
     rc = step1_download_pkg_file(pparam, alter_par_path, PATH_MAX + 1, alter_agent_pkg_file_path, PATH_MAX + 1,
-            pkg_md5_dst, MD5_SUM_LENGTH + 1);
+            pkg_url, pkg_md5_dst, agent_ver);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to downloading new agent package.\"}");
@@ -273,7 +299,7 @@ int op_ota_agent_pkg_entry(pjob_dispatch_param pparam) {
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Restarting device agent to apply new version.\"}");
 
-    rc = step5_restart_agent(pparam, alter_par_name);
+    rc = step5_restart_agent(pparam, alter_par_name, agent_ver);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to restart the agent.\"}");

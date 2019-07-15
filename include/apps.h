@@ -10,7 +10,6 @@
 
 #include "aws_iot_mqtt_client_interface.h"
 
-
 #define IROOTECH_DMP_RP_AGENT_APPS_DIR "../../apps"
 #define IROOTECH_DMP_RP_AGENT_APP_ROOT_DIR "rootfs"
 #define IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE "config.json"

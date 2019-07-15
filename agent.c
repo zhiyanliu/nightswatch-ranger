@@ -41,7 +41,7 @@ int agent_init() {
 }
 
 int agent_cur_par_name(char *par_name, size_t par_name_l) {
-    char work_dir_path[PATH_MAX + 1], link_file_path[PATH_MAX + 1], *filename;
+    char work_dir_path[PATH_MAX + 1], link_file_path[PATH_MAX + 1];
     struct stat buf;
     int rc;
 
@@ -54,7 +54,7 @@ int agent_cur_par_name(char *par_name, size_t par_name_l) {
     getcwd(work_dir_path, PATH_MAX + 1);
 
     snprintf(link_file_path, PATH_MAX + 1, "%s/%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_AGENT_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
+            work_dir_path, IROOTECH_DMP_RP_AGENT_HOME_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
 
     rc = lstat(link_file_path, &buf);
     if (0 != rc)
@@ -71,16 +71,17 @@ int agent_cur_par_name(char *par_name, size_t par_name_l) {
     }
 
     snprintf(par_name, par_name_l, "%s",
-            basename(par_name)); // internal statically allocated result buffer, can not be concurrent
+            basename(dirname(par_name))); // internal statically allocated result buffer, can not be concurrent
 
     return 0;
 }
 
 int agent_get_free_par_dir(char *file_path, size_t file_path_l, char *file_name, size_t file_name_l) {
-    char cur_par_name[PATH_MAX + 1], work_dir_path[PATH_MAX + 1], *par_name = NULL;
+    char cur_par_name[IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_NAME_LEN + 1],
+        work_dir_path[PATH_MAX + 1], *par_name = NULL;
     int rc = 0;
 
-    rc = agent_cur_par_name(cur_par_name, PATH_MAX + 1);
+    rc = agent_cur_par_name(cur_par_name, IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_NAME_LEN + 1);
     if (0 != rc)
         return rc;
 
@@ -114,12 +115,13 @@ int agent_switch_par(char *new_file_path, size_t new_file_path_l, char *new_file
 
     getcwd(work_dir_path, PATH_MAX + 1);
 
-    rc = snprintf(target_file_path, PATH_MAX + 1, "./%s", target_file_name);
+    rc = snprintf(target_file_path, PATH_MAX + 1, "%s/%s/%s",
+            IROOTECH_DMP_RP_AGENT_AGENT_DIR_NAME, target_file_name, IROOTECH_DMP_RP_AGENT_AGENT_FILENAME);
     if (0 == rc)
         return 1;
 
     rc = snprintf(link_file_path, PATH_MAX + 1, "%s/%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_AGENT_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
+            work_dir_path, IROOTECH_DMP_RP_AGENT_HOME_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
     if (0 == rc)
         return 1;
 
@@ -145,10 +147,10 @@ int agent_switch_par(char *new_file_path, size_t new_file_path_l, char *new_file
 }
 
 int agent_check_par_link() {
-    char cur_par_name[PATH_MAX + 1];
+    char cur_par_name[IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_NAME_LEN + 1];
     int rc = 0;
 
-    rc = agent_cur_par_name(cur_par_name, PATH_MAX + 1);
+    rc = agent_cur_par_name(cur_par_name, IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_NAME_LEN + 1);
     if (0 != rc)
         return rc;
 
@@ -171,7 +173,7 @@ int agent_reset_par_link() {
     getcwd(work_dir_path, PATH_MAX + 1);
 
     rc = snprintf(link_file_path, PATH_MAX + 1, "%s/%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_AGENT_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
+            work_dir_path, IROOTECH_DMP_RP_AGENT_HOME_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
     if (0 == rc)
         return 1;
 
@@ -185,4 +187,11 @@ int agent_reset_par_link() {
         return rc; // oops..
 
     return rc;
+}
+
+int agent_par_name_valid(char *par_name) {
+    if (0 == strncmp(IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_1, par_name, 2))
+        return 1;
+
+    return !strncmp(IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_2, par_name, 2);
 }

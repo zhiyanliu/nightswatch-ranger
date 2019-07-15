@@ -1,0 +1,10 @@
+//
+// Created by Zhi Yan Liu on 2019-07-15.
+//
+
+#ifndef IROOTECH_DMP_RP_AGENT_VERSION_H_
+#define IROOTECH_DMP_RP_AGENT_VERSION_H_
+
+#define IROOTECH_DMP_RP_AGENT_VER "0.1.2"
+
+#endif //IROOTECH_DMP_RP_AGENT_VERSION_H_
