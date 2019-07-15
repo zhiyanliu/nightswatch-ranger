@@ -169,6 +169,7 @@ static void* func_router_io_worker(void *p) {
     }
 
     app_name[strcspn(app_name, "\r\n")] = 0; // remove newline at end, e.g. LF, CR, CRLF, LFCR
+    app_name_l = strlen(app_name);
 
     IOT_DEBUG("router IO worker serves application: %s", app_name);
 
@@ -176,7 +177,18 @@ static void* func_router_io_worker(void *p) {
     paramsQOS1.payload = (void *)payload;
     paramsQOS1.isRetained = 0;
 
-    topic_l = snprintf(topic, PATH_MAX + 50, "irootech-dmp/apps/%s/data", app_name);
+    topic_l = read_line(pparam->conn_fd, topic, PATH_MAX + 50);
+    if (0 == topic_l) { // EOF
+        rc = 0;
+        goto end;
+    } else if (-1 == topic_l) { // defence
+        IOT_ERROR("failed to read mqtt topic from the application: %d", errno);
+        rc = errno;
+        goto end;
+    }
+
+    topic[strcspn(topic, "\r\n")] = 0; // remove newline at end, e.g. LF, CR, CRLF, LFCR
+    topic_l = strlen(topic);
 
     // data follow the application name line, as designed currently
     while (1) {
@@ -191,7 +203,8 @@ static void* func_router_io_worker(void *p) {
             break;
         }
 
-        paramsQOS1.payloadLen = read_l;
+        payload[strcspn(payload, "\r\n")] = 0;
+        paramsQOS1.payloadLen = read_l - 1; // no last \n
 
         // send the data to Cloud
         do {
