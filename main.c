@@ -246,7 +246,7 @@ int main(int argc, char **argv) {
     client_connect_ret conn_ret = CONN_FAILED;
     IoT_Error_t iot_rc = FAILURE;
     int rc = 0, upd_dev_ca = 0, upd_dev_ca_works = 1, ota_agent_pkg = 0;
-    char self_path[PATH_MAX + 1], *upd_dev_ca_job_id = NULL, *ota_agent_pkg_job_id = NULL, *ota_agent_ver = NULL;
+    char *self_path, *upd_dev_ca_job_id = NULL, *ota_agent_pkg_job_id = NULL, *ota_agent_ver = NULL;
 
     // disable buffering for logging
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -269,8 +269,8 @@ int main(int argc, char **argv) {
         return errno;
     }
 
-    rc = cur_pid_full_path(self_path, PATH_MAX + 1);
-    if (0 != rc) {
+    self_path = realpath(argv[0], 0);
+    if (NULL == self_path) {
         IOT_ERROR("failed to get current process path");
         return rc;
     }

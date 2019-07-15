@@ -213,7 +213,6 @@ static int step5_restart_agent(pjob_dispatch_param pparam, char *alter_par_name,
             "--ota_agent_pkg_par_name", alter_par_name, "--ota_agent_ver_name", agent_ver, NULL);
     if (0 != rc) {
         IOT_ERROR("[CRITICAL] failed to restart myself: %d", errno);
-        return rc;
     }
 
     return rc;

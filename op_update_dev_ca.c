@@ -16,6 +16,7 @@
 #include "aws_iot_json_utils.h"
 #include "aws_iot_log.h"
 
+#include "agent.h"
 #include "apps.h"
 #include "aws_iot_config.h"
 #include "certs.h"
@@ -189,35 +190,33 @@ static int step4_switch_certs_par(pjob_dispatch_param pparam, char *target_file_
     return rc;
 }
 
-static int step5_restart_agent(pjob_dispatch_param pparam, char *self_path, char *alter_par_name) {
+static int step5_restart_agent(pjob_dispatch_param pparam, char *alter_par_name) {
     int rc = 0;
+    char work_dir_path[PATH_MAX + 1], agent_path[PATH_MAX + 1];
+
+    getcwd(work_dir_path, PATH_MAX + 1);
+
+    snprintf(agent_path, PATH_MAX + 1, "%s/%s/%s",
+            work_dir_path, IROOTECH_DMP_RP_AGENT_HOME_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
 
     IOT_INFO("restarting the agent, switch to using new certs");
 
-    rc = execl(self_path, self_path, "--upd_dev_ca_job_id", pparam->pj->job_id,
+    rc = execl(agent_path, agent_path, "--upd_dev_ca_job_id", pparam->pj->job_id,
             "--upd_dev_ca_par_name", alter_par_name, NULL);
     if (0 != rc) {
         IOT_ERROR("[CRITICAL] failed to restart myself: %d", errno);
-        return rc;
     }
 
     return rc;
 }
 
 int op_update_dev_ca_entry(pjob_dispatch_param pparam) {
-    char self_path[PATH_MAX + 1], alter_par_path[PATH_MAX + 1], alter_par_name[PATH_MAX + 1],
+    char alter_par_path[PATH_MAX + 1], alter_par_name[PATH_MAX + 1],
         alter_certs_pkg_file_path[PATH_MAX + 1];
     unsigned char pkg_md5_src[MD5_SUM_LENGTH + 1], pkg_md5_dst[MD5_SUM_LENGTH + 1];
     int rc = 0;
 
     // TODO(production): check free disk space, reject the operate if needed.
-
-    rc = cur_pid_full_path(self_path, PATH_MAX + 1);
-    if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-                "{\"detail\":\"Failed to prepare execution.\"}");
-        return rc;
-    }
 
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Downloading new certs package to update.\"}");
@@ -274,7 +273,7 @@ int op_update_dev_ca_entry(pjob_dispatch_param pparam) {
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Restarting device agent to apply new certs.\"}");
 
-    rc = step5_restart_agent(pparam, self_path, alter_par_name);
+    rc = step5_restart_agent(pparam, alter_par_name);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to restart the agent.\"}");

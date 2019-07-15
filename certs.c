@@ -157,6 +157,7 @@ int certs_check_par_link() {
         return 0;
     else if (0 == strncmp(IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_2, cur_par_name, 2))
         return 0;
+
     return 1;
 }
 

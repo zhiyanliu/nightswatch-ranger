@@ -8,8 +8,6 @@
 #include <stddef.h>
 
 
-int cur_pid_full_path(char *path, size_t path_l);
-
 size_t read_line(int fd, void *buffer, size_t n);
 
 char* read_str_file(char *path, int *len);
