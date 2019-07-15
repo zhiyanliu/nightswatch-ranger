@@ -21,15 +21,8 @@
 #include "agent.h"
 
 
-char *IROOTECH_DMP_RP_AGENT_AGENT_DIR = "../..";
-
-int agent_init(char *agent_dir) {
+int agent_init() {
     int rc = 0;
-
-    if (NULL == agent_dir)
-        return 1;
-
-    IROOTECH_DMP_RP_AGENT_AGENT_DIR = agent_dir;
 
     rc = agent_check_par_link();
     if (0 == rc)
@@ -48,7 +41,7 @@ int agent_init(char *agent_dir) {
 }
 
 int agent_cur_par_name(char *par_name, size_t par_name_l) {
-    char work_dir_path[PATH_MAX + 1], link_file_path[PATH_MAX + 1];
+    char work_dir_path[PATH_MAX + 1], link_file_path[PATH_MAX + 1], *filename;
     struct stat buf;
     int rc;
 
@@ -192,11 +185,4 @@ int agent_reset_par_link() {
         return rc; // oops..
 
     return rc;
-}
-
-int agent_par_name_valid(char *par_name) {
-    if (0 == strncmp(IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_1, par_name, 2))
-        return 1;
-
-    return !strncmp(IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_2, par_name, 2);
 }

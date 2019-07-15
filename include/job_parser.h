@@ -13,7 +13,7 @@
 #define JOB_PKG_MD5_PROPERTY_NAME "pkg_md5"
 #define JOB_APP_NAME_PROPERTY_NAME "app_name"
 #define JOB_APP_ARGS_PROPERTY_NAME "app_args"
-#define JOB_AGENT_VERSION_PROPERTY_NAME "agent_ver"
+
 
 typedef enum {
     /** Success return value - no error occurred */

@@ -13,21 +13,18 @@ AR ?= ar
 DEBUG = @
 
 SDK_NAME = awsiot
-AGENT_NAME = dmpagent
-AGENT_ENTRY_NAME = agent
-NIGHTWATCH_NAME = nightwatch
+APP_NAME = dmpagent
+APP_ENTRY = agent
 
-AGENT_DIR = .
-NIGHTWATCH_DIR = .
+APP_DIR = .
 
 #IoT SDK directory
-IOT_SDK_DIR = $(AGENT_DIR)/aws-iot-device-sdk-embedded-C
+IOT_SDK_DIR = $(APP_DIR)/aws-iot-device-sdk-embedded-C
 
 PLATFORM_TLS_DIR = $(IOT_SDK_DIR)/platform/linux/mbedtls
 PLATFORM_COMMON_DIR = $(IOT_SDK_DIR)/platform/linux/common
 PLATFORM_PTHREAD_DIR = $(IOT_SDK_DIR)/platform/linux/pthread
 
-IOT_INCLUDE_DIRS += -I .
 IOT_INCLUDE_DIRS += -I $(IOT_SDK_DIR)/include
 IOT_INCLUDE_DIRS += -I $(IOT_SDK_DIR)/sdk_config
 IOT_INCLUDE_DIRS += -I $(IOT_SDK_DIR)/external_libs/jsmn
@@ -50,26 +47,15 @@ TLS_INCLUDE_DIR = -I $(MBEDTLS_DIR)/include
 OPENSSL_LIB_DIR = /usr/local/opt/openssl/lib
 OPENSSL_INCLUDE_DIR = -I /usr/local/opt/openssl/include
 
-#AGENT - dmpagent
-AGENT_INCLUDE_DIRS += -I $(AGENT_DIR)
-AGENT_INCLUDE_DIRS += -I $(AGENT_DIR)/include
+#APP - dmpagent
+APP_INCLUDE_DIRS += -I $(APP_DIR)
+APP_INCLUDE_DIRS += -I $(APP_DIR)/include
 
-#NIGHTWATCH - nightwatch
-NIGHTWATCH_INCLUDE_DIRS += -I $(NIGHTWATCH_DIR)
-NIGHTWATCH_INCLUDE_DIRS += -I $(NIGHTWATCH_DIR)/include
-
-#Aggregate all include and src directories for iot sdk
-IOT_INCLUDE_ALL_DIRS += $(IOT_INCLUDE_DIRS)
-IOT_INCLUDE_ALL_DIRS += $(TLS_INCLUDE_DIR)
-IOT_INCLUDE_ALL_DIRS += $(OPENSSL_INCLUDE_DIR)
-
-#Aggregate all include and src directories for agent - dmpagent
-AGENT_INCLUDE_ALL_DIRS += $(AGENT_INCLUDE_DIRS)
-AGENT_INCLUDE_ALL_DIRS += $(IOT_INCLUDE_ALL_DIRS)
-
-#Aggregate all include and src directories for nightwatch - nightwatch
-NIGHTWATCH_INCLUDE_ALL_DIRS += $(NIGHTWATCH_INCLUDE_DIRS)
-NIGHTWATCH_INCLUDE_ALL_DIRS += $(IOT_INCLUDE_ALL_DIRS)
+#Aggregate all include and src directories
+INCLUDE_ALL_DIRS += $(APP_INCLUDE_DIRS)
+INCLUDE_ALL_DIRS += $(IOT_INCLUDE_DIRS)
+INCLUDE_ALL_DIRS += $(TLS_INCLUDE_DIR)
+INCLUDE_ALL_DIRS += $(OPENSSL_INCLUDE_DIR)
 
 # Logging level control
 LOG_FLAGS += -DENABLE_IOT_DEBUG
@@ -81,29 +67,20 @@ COMPILER_FLAGS += $(LOG_FLAGS) -D_ENABLE_THREAD_SUPPORT_
 #If the processor is big endian uncomment the compiler flag
 #COMPILER_FLAGS += -DREVERSED
 
-
 MBED_TLS_MAKE_CMD = $(MAKE) -C $(MBEDTLS_DIR)
 
 PRE_MAKE_SDK_CMD = $(MBED_TLS_MAKE_CMD)
-MAKE_SDK_CMD = $(CC) $(IOT_SRC_FILES) $(COMPILER_FLAGS) -c $(IOT_INCLUDE_ALL_DIRS)
+MAKE_SDK_CMD = $(CC) $(IOT_SRC_FILES) $(COMPILER_FLAGS) -c $(INCLUDE_ALL_DIRS)
 POST_MAKE_SDK_CMD = $(AR) cr lib$(SDK_NAME).a *.o
 
-AGENT_SRC_FILES += $(shell find $(APP_DIR) -name "*.c" -not -path "./aws-iot-device-sdk-embedded-C/*" -not -path "./nightwatch_main.c")
-NIGHTWATCH_SRC_FILES += $(shell find $(APP_DIR) -name "*.c" -not -path "./aws-iot-device-sdk-embedded-C/*" -not -path "./agent_main.c")
+APP_SRC_FILES += $(shell find $(APP_DIR) -name "*.c" -not -path "./aws-iot-device-sdk-embedded-C/*")
 
-AWSIOT_SDK_LIB += -L .
+EXTERNAL_LIBS += -L $(TLS_LIB_DIR) -L $(OPENSSL_LIB_DIR)
+AWSIOT_SDK += -L $(APP_DIR)
+LD_FLAG += -Wl,-rpath,$(TLS_LIB_DIR)
+LD_FLAG += -ldl -lpthread -l$(SDK_NAME) -lmbedtls -lmbedx509 -lmbedcrypto -lcurl -lcrypto
 
-AGENT_EXTERNAL_LIBS += -L $(TLS_LIB_DIR) -L $(OPENSSL_LIB_DIR)
-AGENT_LD_FLAG += -Wl,-rpath,$(TLS_LIB_DIR)
-AGENT_LD_FLAG += -ldl -lpthread -l$(SDK_NAME) -lmbedtls -lmbedx509 -lmbedcrypto -lcurl -lcrypto
-
-NIGHTWATCH_EXTERNAL_LIBS += -L $(TLS_LIB_DIR) -L $(OPENSSL_LIB_DIR)
-NIGHTWATCH_LD_FLAG += -Wl,-rpath,$(TLS_LIB_DIR)
-NIGHTWATCH_LD_FLAG += -ldl -lpthread -l$(SDK_NAME) -lmbedtls -lmbedx509 -lmbedcrypto -lcurl -lcrypto
-
-MAKE_AGENT_CMD = $(CC) $(AGENT_SRC_FILES) $(COMPILER_FLAGS) -o $(AGENT_NAME) $(AGENT_LD_FLAG) $(AGENT_EXTERNAL_LIBS) $(AWSIOT_SDK_LIB) $(AGENT_INCLUDE_ALL_DIRS)
-
-MAKE_NIGHTWATCH_CMD = $(CC) $(NIGHTWATCH_SRC_FILES) $(COMPILER_FLAGS) -o $(NIGHTWATCH_NAME) $(NIGHTWATCH_LD_FLAG) $(NIGHTWATCH_EXTERNAL_LIBS) $(AWSIOT_SDK_LIB) $(NIGHTWATCH_INCLUDE_ALL_DIRS)
+MAKE_APP_CMD = $(CC) $(APP_SRC_FILES) $(COMPILER_FLAGS) -o $(APP_NAME) $(LD_FLAG) $(EXTERNAL_LIBS) $(AWSIOT_SDK) $(INCLUDE_ALL_DIRS)
 
 default: all
 
@@ -122,32 +99,25 @@ lib$(SDK_NAME).a: aws-iot-device-sdk-embedded-C
 	$(DEBUG)$(MAKE_SDK_CMD)
 	$(POST_MAKE_SDK_CMD)
 
-$(AGENT_NAME): lib$(SDK_NAME).a $(AGENT_SRC_FILES)
-	$(PRE_MAKE_AGENT_CMD)
-	$(DEBUG)$(MAKE_AGENT_CMD)
-	$(POST_MAKE_AGENT_CMD)
+$(APP_NAME): lib$(SDK_NAME).a $(APP_SRC_FILES)
+	$(PRE_MAKE_APP_CMD)
+	$(DEBUG)$(MAKE_APP_CMD)
+	$(POST_MAKE_APP_CMD)
 
-$(NIGHTWATCH_NAME): lib$(SDK_NAME).a $(NIGHTWATCH_SRC_FILES)
-	$(PRE_MAKE_NIGHTWATCH_CMD)
-	$(DEBUG)$(MAKE_NIGHTWATCH_CMD)
-	$(POST_MAKE_NIGHTWATCH_CMD)
-
-$(AGENT_ENTRY_NAME): $(AGENT_NAME) $(NIGHTWATCH_NAME)
+$(APP_ENTRY): $(APP_NAME)
 	mkdir -p bin/p1
 	mkdir -p bin/p2
-	cp -f $(NIGHTWATCH_NAME) bin
-	cp -f $(AGENT_NAME) bin/p1/$(AGENT_NAME)
-	ln -fs bin/p1/$(AGENT_NAME) $(AGENT_ENTRY_NAME)
+	cp -f $(APP_NAME) bin/p1/$(APP_NAME)
+	ln -fs bin/p1/$(APP_NAME) $(APP_ENTRY)
 
-install: $(AGENT_ENTRY_NAME)
+install: $(APP_ENTRY)
 
 all: install
 
 clean:
-	rm -rf bin
 	rm -f *.o
 	rm -f lib$(SDK_NAME).a
-	rm -f $(AGENT_NAME)
-	rm -f $(NIGHTWATCH_NAME)
-	rm -f $(AGENT_ENTRY_NAME)
+	rm -f $(APP_NAME)
+	rm -rf bin
+	rm -r $(APP_ENTRY)
 	-$(MBED_TLS_MAKE_CMD) clean
