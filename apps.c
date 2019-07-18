@@ -16,6 +16,7 @@
 #include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <sys/un.h>
 #include <unistd.h>
 
@@ -475,6 +476,7 @@ static void* app_log_controller(void *p) {
                         if (0 == read_len) { // EOF
                             // container child process existed
                             del_app_deployed_pid(container_pid);
+                            waitpid(pid, 0, 0);
                             IOT_INFO("application %s log controller existed", pparam->app_name);
                             rc = 0;
                             goto release;
@@ -587,6 +589,7 @@ static void* app_event_controller(void *p) {
 
                         if (0 == read_len) { // EOF
                             // container child process existed
+                            waitpid(pid, 0, 0);
                             IOT_INFO("application %s event controller existed", pparam->app_name);
                             rc = 0;
                             goto release;
@@ -690,6 +693,7 @@ int apps_send_signal(int signo) {
                 IOT_DEBUG("send signal %d to pid %d", signo, pid);
                 rc = kill(pid, signo);
             } while (0 != rc && ESRCH != errno); // ESRCH means pid does not exist.
+
         }
     }
 
