@@ -37,10 +37,12 @@ static int32_t _token_c;
 
 
 static int parse_job_doc(pjob pj, char *app_name, size_t app_name_l, char *pkg_url, size_t pkg_url_l,
-        unsigned char *pkg_md5, size_t pkg_md5_l, char *app_args, size_t app_args_l) {
+        unsigned char *pkg_md5, size_t pkg_md5_l, char *app_args, size_t app_args_l, bool *force) {
 
     IoT_Error_t rc = FAILURE;
-    jsmntok_t *tok_app_name, *tok_pkg_url, *tok_pkg_md5, *tok_app_args;
+    jsmntok_t *tok_app_name, *tok_pkg_url, *tok_pkg_md5, *tok_app_args, *tok_force;
+
+    int force_flag = 0;
 
     jsmn_init(&_json_parser);
     _token_c = jsmn_parse(&_json_parser, pj->job_doc, (int)pj->job_doc_l,
@@ -74,6 +76,12 @@ static int parse_job_doc(pjob pj, char *app_name, size_t app_name_l, char *pkg_u
         return 3;
     }
 
+    tok_force = findToken(JOB_APP_FORCE_PROPERTY_NAME, pj->job_doc, _json_tok_v);
+    if (NULL != tok_force)  // optional flag
+        force_flag = 1;
+    else
+        *force = 0;
+
     rc = parseStringValue(app_name, app_name_l, pj->job_doc, tok_app_name);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to parse job application name: %d", rc);
@@ -98,6 +106,14 @@ static int parse_job_doc(pjob pj, char *app_name, size_t app_name_l, char *pkg_u
         return rc;
     }
 
+    if (force_flag) {
+        rc = parseBooleanValue((bool*)force, pj->job_doc, tok_force);
+        if (SUCCESS != rc) {
+            IOT_ERROR("failed to parse application force deploy flag: %d", rc);
+            return rc;
+        }
+    }
+
     return 0;
 }
 
@@ -106,9 +122,10 @@ static int step1_check_app_deployed(pjob_dispatch_param pparam, char *app_name, 
         char *app_args, size_t app_args_l) {
 
     int rc = 0;
+    bool force;
 
     rc = parse_job_doc(pparam->pj, app_name, app_name_l, pkg_url, pkg_url_l,
-            pkg_md5_dst, pkg_md5_l, app_args, app_args_l);
+            pkg_md5_dst, pkg_md5_l, app_args, app_args_l, &force);
     if (0 != rc) {
         IOT_ERROR("failed to parse job doc for deploy application operation: %d", rc);
         return rc;
@@ -116,8 +133,12 @@ static int step1_check_app_deployed(pjob_dispatch_param pparam, char *app_name, 
 
     rc = app_exists(app_name);
     if (1 == rc) {
-        IOT_ERROR("application %s was deployed on this device already: %d", app_name, rc);
-        return rc;
+        if (force) {
+            IOT_WARN("application %s was deployed on this device already: %d", app_name, rc);
+            rc = 1000;
+        } else {
+            IOT_ERROR("application %s was deployed on this device already: %d", app_name, rc);
+        }
     }
 
     return rc;
@@ -284,7 +305,17 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
 
     rc = step1_check_app_deployed(pparam, app_name, PATH_MAX + 1, pkg_url, 4096,
             pkg_md5_dst, MD5_SUM_LENGTH + 1, app_args, PATH_MAX + 1);
-    if (0 != rc) {
+    if (1000 == rc) {  // force deploy
+        dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+                "{\"detail\":\"Destroying existing application container to force deploy.\"}");
+
+        rc = app_destroy(app_name);
+        if (0 != rc) {
+            dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+                    "{\"detail\":\"Failed to destroy existing application container.\"}");
+            return rc;
+        }
+    } else if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Application was deployed on this device already.\"}");
         return rc;
