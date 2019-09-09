@@ -484,7 +484,7 @@ static void* app_log_controller(void *p) {
         paramsQOS1.payload = (void *)payload;
         paramsQOS1.isRetained = 0;
 
-        topic_l = snprintf(topic, PATH_MAX + 50, "irootech-dmp/apps/%s/log", pparam->app_name);
+        topic_l = snprintf(topic, PATH_MAX + 50, "dmp/apps/%s/log", pparam->app_name);
 
         while (1) {
             FD_ZERO(&fds);
@@ -596,7 +596,7 @@ static void* app_event_controller(void *p) {
         paramsQOS1.payload = (void *)payload;
         paramsQOS1.isRetained = 0;
 
-        topic_l = snprintf(topic, PATH_MAX + 50, "irootech-dmp/apps/%s/event", pparam->app_name);
+        topic_l = snprintf(topic, PATH_MAX + 50, "dmp/apps/%s/event", pparam->app_name);
 
         close(fd[1]);
 
