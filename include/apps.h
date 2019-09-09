@@ -57,10 +57,18 @@ int app_event_ctrlr_param_free(papp_event_ctlr_param pparam);
 
 int app_exists(char *app_name);
 
+int app_pid(char *app_name, int wait_app);
+
 int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client);
+
+int app_destroy(char *app_name);
+
+int app_send_signal(int pid, int signo);
 
 int apps_send_signal(int signo);
 
+int app_kill();
+
 int apps_kill();
 
-#endif //IROOTECH_DMP_RP_AGENT_APPS_H_
+#endif // IROOTECH_DMP_RP_AGENT_APPS_H_

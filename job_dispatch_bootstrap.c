@@ -9,6 +9,7 @@
 #include "job_op_types.h"
 
 #include "op_deploy_app_pkg.h"
+#include "op_destroy_app_pkg.h"
 #include "op_ota_sys_pkg.h"
 #include "op_ota_agent_pkg.h"
 #include "op_ota_agent_plug.h"
@@ -35,6 +36,10 @@ pjob_dispatcher job_dispatcher_bootstrap() {
     // Deploy application package
     job_dispatcher_reg_executor(&job_dispatcher_default,
             JOB_DEPLOY_APP_PKG_STR, strlen(JOB_DEPLOY_APP_PKG_STR) + 1, op_deploy_app_pkg_entry);
+
+    // Destroy application package
+    job_dispatcher_reg_executor(&job_dispatcher_default,
+            JOB_DESTROY_APP_PKG_STR, strlen(JOB_DESTROY_APP_PKG_STR) + 1, op_destroy_app_pkg_entry);
 
     return &job_dispatcher_default;
 }

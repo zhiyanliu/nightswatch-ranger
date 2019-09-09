@@ -120,5 +120,5 @@ clean:
 	rm -f lib$(SDK_NAME).a
 	rm -f $(APP_NAME)
 	rm -rf bin
-	rm -r $(APP_ENTRY)
+	rm -f $(APP_ENTRY)
 	-$(MBED_TLS_MAKE_CMD) clean

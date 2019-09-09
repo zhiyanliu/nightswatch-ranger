@@ -221,6 +221,48 @@ int app_exists(char *app_name) {
     return !rc;
 }
 
+int app_pid(char *app_name, int wait_app) {
+    char pid_file_path_v[PATH_MAX + 1], *container_pid_s;
+    int rc = 0, container_pid_l = 0, container_pid = 0;
+
+    if (NULL == app_name)
+        return 0;
+
+    do {
+        rc = app_exists(app_name);
+        if (0 == rc) {
+            if (wait_app) {  // defense, wait container startup
+                IOT_WARN("application %s not found, wait", app_name);
+            } else {
+                IOT_ERROR("application %s not found", app_name);
+                return rc;
+            }
+        }
+    } while (0 == rc);
+
+    rc = app_container_pid_path(pid_file_path_v, PATH_MAX + 1, app_name);
+    if (-1 == rc) {
+        IOT_ERROR("failed to get application pid file path: %d", rc);
+        return 0;
+    }
+
+    // defense, wait container startup
+    while (access(pid_file_path_v, F_OK) == -1);
+    // wait pid file flush
+    sleep(1);
+
+    container_pid_s = read_str_file(pid_file_path_v, &container_pid_l);
+    if (NULL == container_pid_s) {
+        IOT_ERROR("failed to get application container pid from %s", pid_file_path_v);
+        return 0;
+    }
+
+    container_pid = atoi(container_pid_s);
+    free(container_pid_s);
+
+    return container_pid;
+}
+
 int app_log_ctrlr_param_create(char *app_name, AWS_IoT_Client *paws_iot_client, papp_log_ctlr_param *ppparam) {
     int rc = 0;
 
@@ -425,27 +467,16 @@ static void* app_log_controller(void *p) {
         IoT_Publish_Message_Params paramsQOS1;
         char payload[4096], topic[PATH_MAX + 50];
         IoT_Error_t rc = SUCCESS;
-        int topic_l, container_pid_l;
-
-        char *container_pid_s;
+        int topic_l, container_pid;
 
         close(fd[1]);
 
-        // wait container startup
-        while (access(app_container_pid_path_v, F_OK) == -1);
-        // wait pid file flush
-        sleep(1);
+        container_pid = app_pid(pparam->app_name, 1);
 
-        container_pid_s = read_str_file(app_container_pid_path_v, &container_pid_l);
-
-        if (NULL == container_pid_s) {
-            IOT_ERROR("failed to get application container pid from %s", app_container_pid_path_v);
+        if (0 == container_pid) {
             rc = 1;
             goto release;
         }
-
-        container_pid = atoi(container_pid_s);
-        free(container_pid_s);
 
         add_app_deployed_pid(container_pid);
 
@@ -681,23 +712,72 @@ int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client) {
     return rc;
 }
 
+int app_destroy(char *app_name) {
+    int rc = 1, container_pid = 0;
+    char work_dir_path[PATH_MAX + 1], app_home_path[PATH_MAX + 1], cmd[PATH_MAX + 10] = {0};
+
+    container_pid = app_pid(app_name, 0);
+    if (0 == container_pid)
+        return 1;
+
+    while (rc) {
+        app_kill(container_pid);
+        IOT_DEBUG("waiting application container exists, pid: %d", container_pid);
+        sleep(1);
+        rc = app_exists(app_name);
+    }
+
+    getcwd(work_dir_path, PATH_MAX + 1);
+
+    snprintf(app_home_path, PATH_MAX + 1, "%s/%s/%s",
+            work_dir_path, IROOTECH_DMP_RP_AGENT_APPS_DIR, app_name);
+
+    snprintf(cmd, PATH_MAX + 10, "rm -rf %s", app_home_path);
+
+    rc = system(cmd);
+    if (0 != rc) {
+        IOT_WARN("failed to unlink existing application at %s: %d, "
+                 "disk space did not release, ignored", app_home_path, rc);
+    }
+
+    IOT_INFO("application %s destroyed", app_name);
+
+    return rc;
+}
+
+int app_send_signal(int pid, int signo) {
+    int rc = 0;
+
+    if (0 >= pid)
+        return 1;
+
+    do {
+        IOT_DEBUG("send signal %d to pid %d", signo, pid);
+        rc = kill(pid, signo);
+    } while (0 != rc && ESRCH != errno); // ESRCH means pid does not exist.
+
+    return 0;
+}
+
 int apps_send_signal(int signo) {
     size_t i = 0;
     int pid = -1, rc = 0;
 
     for (i = 0; i < apps_deployed_pid_l; i++) {
         pid = apps_deployed_pid_v[i];
+        if (0 >= pid)
+            continue;
 
-        if (0 < pid) {
-            do {
-                IOT_DEBUG("send signal %d to pid %d", signo, pid);
-                rc = kill(pid, signo);
-            } while (0 != rc && ESRCH != errno); // ESRCH means pid does not exist.
-
-        }
+        rc = app_send_signal(pid, signo);
+        if (0 != rc)
+            IOT_WARN("failed to send signal %d to application (pid %d), ignored", signo, pid);
     }
 
     return 0;
+}
+
+int app_kill(int pid) {
+    return app_send_signal(pid, SIGKILL);
 }
 
 int apps_kill() {

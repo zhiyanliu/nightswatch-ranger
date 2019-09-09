@@ -25,7 +25,6 @@
 #include "md5_calc.h"
 #include "op_deploy_app_pkg.h"
 #include "s3_http.h"
-#include "utils.h"
 
 
 /*
@@ -353,7 +352,7 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
         IOT_ERROR("failed to set application deploy job status to SUCCEEDED, "
                   "will redo this job if it still under IN_PROGRESS status: %d", rc);
     } else {
-        IOT_INFO("deploy application successfully, job id: %s", pparam->pj->job_id);
+        IOT_INFO("deploy application %s successfully, job id: %s", app_name, pparam->pj->job_id);
     }
 
     return rc;

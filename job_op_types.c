@@ -11,3 +11,4 @@ const char *JOB_OP_UPDATE_AGENT_CFG_STR = "update_agent_cfg";
 const char *JOB_OP_REMOTE_OP_EXEC_STR = "remote_op_exec";
 const char *JOB_OP_UPDATE_DEV_CA_STR = "update_dev_ca";
 const char *JOB_DEPLOY_APP_PKG_STR = "deploy_app_pkg";
+const char *JOB_DESTROY_APP_PKG_STR = "destroy_app_pkg";
