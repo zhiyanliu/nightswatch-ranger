@@ -36,9 +36,11 @@ static jsmntok_t _json_tok_v[MAX_JSON_TOKEN_EXPECTED];
 static int32_t _token_c;
 
 
-static int parse_job_doc(pjob pj, char *app_name, size_t app_name_l) {
+static int parse_job_doc(pjob pj, char *app_name, size_t app_name_l, bool *use_container) {
     IoT_Error_t rc = FAILURE;
-    jsmntok_t *tok_app_name;
+    jsmntok_t *tok_app_name, *tok_use_container;
+
+    int use_container_flag = 0;
 
     jsmn_init(&_json_parser);
     _token_c = jsmn_parse(&_json_parser, pj->job_doc, (int) pj->job_doc_l,
@@ -54,25 +56,48 @@ static int parse_job_doc(pjob pj, char *app_name, size_t app_name_l) {
         return 2;
     }
 
+    tok_use_container = findToken(JOB_APP_USE_CONTAINER_PROPERTY_NAME, pj->job_doc, _json_tok_v);
+    if (NULL != tok_use_container) // optional flag
+        use_container_flag = 1;
+    else
+        *use_container = 1;  // by default True
+
     rc = parseStringValue(app_name, app_name_l, pj->job_doc, tok_app_name);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to parse job application name: %d", rc);
         return rc;
     }
 
+    if (use_container_flag) {
+        rc = parseBooleanValue((bool*)use_container, pj->job_doc, tok_use_container);
+        if (SUCCESS != rc) {
+            IOT_ERROR("failed to parse application if was destroyed by container flag: %d", rc);
+            return rc;
+        }
+    }
+
     return 0;
 }
 
-static int step1_check_app_deployed(pjob_dispatch_param pparam, char *app_name, size_t app_name_l) {
-    int rc = 0;
+static int step1_check_app_deployed(pjob_dispatch_param pparam, char *app_name, size_t app_name_l,
+        int *launcher_type) {
 
-    rc = parse_job_doc(pparam->pj, app_name, app_name_l);
+    int rc = 0;
+    bool use_container;
+
+    rc = parse_job_doc(pparam->pj, app_name, app_name_l, &use_container);
     if (0 != rc) {
         IOT_ERROR("failed to parse job doc for destroy application operation: %d", rc);
         return rc;
     }
 
-    rc = app_exists(app_name);
+    if (use_container)
+        // using runc by default
+        *launcher_type = IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUNC;
+    else
+        *launcher_type = IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUND;
+
+    rc = app_exists(app_name, *launcher_type);
     if (0 == rc) {
         IOT_ERROR("application %s was not deployed on this device yet: %d", app_name, rc);
         return rc;
@@ -83,9 +108,9 @@ static int step1_check_app_deployed(pjob_dispatch_param pparam, char *app_name, 
 
 int op_destroy_app_pkg_entry(pjob_dispatch_param pparam) {
     char app_name[PATH_MAX + 1];
-    int rc = 0;
+    int launcher_type = 0, rc = 0;
 
-    rc = step1_check_app_deployed(pparam, app_name, PATH_MAX + 1);
+    rc = step1_check_app_deployed(pparam, app_name, PATH_MAX + 1, &launcher_type);
     if (1 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Application was not deployed on this device yet.\"}");
@@ -93,12 +118,12 @@ int op_destroy_app_pkg_entry(pjob_dispatch_param pparam) {
     }
 
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-            "{\"detail\":\"Destroying application container.\"}");
+            "{\"detail\":\"Destroying application process.\"}");
 
-    rc = app_destroy(app_name);
+    rc = app_destroy(app_name, launcher_type);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-                "{\"detail\":\"Failed to destroy application container.\"}");
+                "{\"detail\":\"Failed to destroy application process.\"}");
         return rc;
     }
 

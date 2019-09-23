@@ -1,4 +1,5 @@
 {
   "operate": "destroy_app_pkg",
-  "app_name": "app_xxx"
+  "app_name": "app_xxx",
+  "use_container": true
 }

@@ -14,6 +14,7 @@
 #define JOB_APP_NAME_PROPERTY_NAME "app_name"
 #define JOB_APP_ARGS_PROPERTY_NAME "app_args"
 #define JOB_APP_FORCE_PROPERTY_NAME "force"
+#define JOB_APP_USE_CONTAINER_PROPERTY_NAME "use_container"
 #define JOB_AGENT_VERSION_PROPERTY_NAME "agent_ver"
 
 typedef enum {

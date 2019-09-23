@@ -106,7 +106,7 @@ int app_root_path(char *app_root_path_v, size_t app_root_path_l, char *app_name)
     return len0 + len1;
 }
 
-int app_spec_tpl_path(char *app_spec_tpl_path_v, size_t app_spec_tpl_path_l) {
+int app_spec_tpl_path(char *app_spec_tpl_path_v, size_t app_spec_tpl_path_l, int launcher_type) {
     int len0 = 0, len1 = 0;
 
     if (NULL == app_spec_tpl_path_v)
@@ -116,8 +116,15 @@ int app_spec_tpl_path(char *app_spec_tpl_path_v, size_t app_spec_tpl_path_l) {
     if (-1 == len0)
         return -1;
 
-    len1 = snprintf(app_spec_tpl_path_v + len0, app_spec_tpl_path_l - len0, "/%s.tpl",
-            IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE);
+    if (launcher_type == IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUNC)
+        len1 = snprintf(app_spec_tpl_path_v + len0, app_spec_tpl_path_l - len0, "/%s.runc.tpl",
+                        IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE);
+    else if (launcher_type == IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUND)
+        len1 = snprintf(app_spec_tpl_path_v + len0, app_spec_tpl_path_l - len0, "/%s.rund.tpl",
+                        IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE);
+    else
+        return -1;
+
     if (-1 == len1)
         return -1;
 
@@ -141,17 +148,25 @@ int app_spec_path(char *app_spec_path_v, size_t app_spec_path_l, char *app_name)
     return len0 + len1;
 }
 
-int app_runc_path(char *app_runc_path_v, size_t app_runc_path_l) {
+int app_launcher_path(char *app_launch_path_v, size_t app_launch_path_l, int launcher_type) {
     int len0 = 0, len1 = 0;
 
-    if (NULL == app_runc_path_v)
+    if (NULL == app_launch_path_v)
         return -1;
 
-    len0 = apps_path(app_runc_path_v, app_runc_path_l);
+    len0 = apps_path(app_launch_path_v, app_launch_path_l);
     if (-1 == len0)
         return -1;
 
-    len1 = snprintf(app_runc_path_v + len0, app_runc_path_l - len0, "/%s", IROOTECH_DMP_RP_AGENT_APP_RUNC);
+    if (launcher_type == IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUNC)
+        len1 = snprintf(app_launch_path_v + len0, app_launch_path_l - len0, "/%s",
+                IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_NAME_RUNC);
+    else if (launcher_type == IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUND)
+        len1 = snprintf(app_launch_path_v + len0, app_launch_path_l - len0, "/%s",
+                IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_NAME_RUND);
+    else
+        return -1;
+
     if (-1 == len1)
         return -1;
 
@@ -159,53 +174,34 @@ int app_runc_path(char *app_runc_path_v, size_t app_runc_path_l) {
 
 }
 
-// unused console way, currently
-int app_console_sock_path(char *console_sock_path_v, size_t console_sock_path_l, char *app_name) {
+int app_process_pid_path(char *process_pid_path_v, size_t process_pid_path_l, char *app_name) {
     int len0 = 0, len1 = 0;
 
-    if (NULL == console_sock_path_v)
+    if (NULL == process_pid_path_v)
         return -1;
 
-    len0 = app_home_path(console_sock_path_v, console_sock_path_l, app_name);
+    len0 = app_home_path(process_pid_path_v, process_pid_path_l, app_name);
     if (-1 == len0)
         return -1;
 
-    len1 = snprintf(console_sock_path_v + len0, console_sock_path_l - len0, "/%s",
-            IROOTECH_DMP_RP_AGENT_APP_CONSOLE_SOCK_FILE);
+    len1 = snprintf(process_pid_path_v + len0, process_pid_path_l - len0, "/%s",
+            IROOTECH_DMP_RP_AGENT_APP_PROCESS_PID_FILE);
     if (-1 == len1)
         return -1;
 
     return len0 + len1;
 }
 
-int app_container_pid_path(char *container_pid_path_v, size_t container_pid_path_l, char *app_name) {
-    int len0 = 0, len1 = 0;
-
-    if (NULL == container_pid_path_v)
-        return -1;
-
-    len0 = app_home_path(container_pid_path_v, container_pid_path_l, app_name);
-    if (-1 == len0)
-        return -1;
-
-    len1 = snprintf(container_pid_path_v + len0, container_pid_path_l - len0, "/%s",
-            IROOTECH_DMP_RP_AGENT_APP_CONTAINER_PID_FILE);
-    if (-1 == len1)
-        return -1;
-
-    return len0 + len1;
-}
-
-int app_exists(char *app_name) {
-    char cmd[PATH_MAX * 2 + 20] = {0}, app_runc_path_v[PATH_MAX + 1], app_home_path_v[PATH_MAX + 1];
+int app_exists(char *app_name, int launcher_type) {
+    char cmd[PATH_MAX * 2 + 20] = {0}, app_launcher_path_v[PATH_MAX + 1], app_home_path_v[PATH_MAX + 1];
     int rc = 0;
 
     if (NULL == app_name)
         return 1;
 
-    rc = app_runc_path(app_runc_path_v, PATH_MAX + 1);
+    rc = app_launcher_path(app_launcher_path_v, PATH_MAX + 1, launcher_type);
     if (-1 == rc) {
-        IOT_ERROR("failed to get application runc path: %d", rc);
+        IOT_ERROR("failed to get application launcher path: %d", rc);
         return 1;
     }
 
@@ -215,23 +211,23 @@ int app_exists(char *app_name) {
         return 1;
     }
 
-    snprintf(cmd, PATH_MAX * 2 + 20, "%s state %s > /dev/null 2>&1", app_runc_path_v, app_name);
+    snprintf(cmd, PATH_MAX * 2 + 20, "%s state %s > /dev/null 2>&1", app_launcher_path_v, app_name);
 
     rc = system(cmd);
     return !rc;
 }
 
-int app_pid(char *app_name, int wait_app) {
-    char pid_file_path_v[PATH_MAX + 1], *container_pid_s;
-    int rc = 0, container_pid_l = 0, container_pid = 0;
+int app_pid(char *app_name, int wait_app, int launcher_type) {
+    char pid_file_path_v[PATH_MAX + 1], *process_pid_s;
+    int rc = 0, process_pid_l = 0, process_pid = 0;
 
     if (NULL == app_name)
         return 0;
 
     do {
-        rc = app_exists(app_name);
+        rc = app_exists(app_name, launcher_type);
         if (0 == rc) {
-            if (wait_app) {  // defense, wait container startup
+            if (wait_app) {  // defense, wait process startup
                 IOT_WARN("application %s not found, wait", app_name);
             } else {
                 IOT_ERROR("application %s not found", app_name);
@@ -240,30 +236,32 @@ int app_pid(char *app_name, int wait_app) {
         }
     } while (0 == rc);
 
-    rc = app_container_pid_path(pid_file_path_v, PATH_MAX + 1, app_name);
+    rc = app_process_pid_path(pid_file_path_v, PATH_MAX + 1, app_name);
     if (-1 == rc) {
         IOT_ERROR("failed to get application pid file path: %d", rc);
         return 0;
     }
 
-    // defense, wait container startup
+    // defense, wait process startup
     while (access(pid_file_path_v, F_OK) == -1);
     // wait pid file flush
     sleep(1);
 
-    container_pid_s = read_str_file(pid_file_path_v, &container_pid_l);
-    if (NULL == container_pid_s) {
-        IOT_ERROR("failed to get application container pid from %s", pid_file_path_v);
+    process_pid_s = read_str_file(pid_file_path_v, &process_pid_l);
+    if (NULL == process_pid_s) {
+        IOT_ERROR("failed to get application process pid from %s", pid_file_path_v);
         return 0;
     }
 
-    container_pid = atoi(container_pid_s);
-    free(container_pid_s);
+    process_pid = atoi(process_pid_s);
+    free(process_pid_s);
 
-    return container_pid;
+    return process_pid;
 }
 
-int app_log_ctrlr_param_create(char *app_name, AWS_IoT_Client *paws_iot_client, papp_log_ctlr_param *ppparam) {
+int app_log_ctrlr_param_create(int launcher_type, char *app_name, AWS_IoT_Client *paws_iot_client,
+        papp_log_ctlr_param *ppparam) {
+
     int rc = 0;
 
     if (NULL == app_name)
@@ -276,6 +274,7 @@ int app_log_ctrlr_param_create(char *app_name, AWS_IoT_Client *paws_iot_client, 
     if (NULL == *ppparam)
         return 1;
 
+    (*ppparam)->launcher_type = launcher_type;
     snprintf((*ppparam)->app_name, PATH_MAX + 1, "%s", app_name);
 
     rc = pipe((*ppparam)->ctl_pipe_in);
@@ -312,7 +311,9 @@ int app_log_ctrlr_param_free(papp_log_ctlr_param pparam) {
     return 0;
 }
 
-int app_event_ctrlr_param_create(char *app_name, AWS_IoT_Client *paws_iot_client, papp_event_ctlr_param *ppparam) {
+int app_event_ctrlr_param_create(int launcher_type, char *app_name, AWS_IoT_Client *paws_iot_client,
+        papp_event_ctlr_param *ppparam) {
+
     int rc = 0;
 
     if (NULL == app_name)
@@ -325,6 +326,7 @@ int app_event_ctrlr_param_create(char *app_name, AWS_IoT_Client *paws_iot_client
     if (NULL == *ppparam)
         return 1;
 
+    (*ppparam)->launcher_type = launcher_type;
     snprintf((*ppparam)->app_name, PATH_MAX + 1, "%s", app_name);
 
     rc = pipe((*ppparam)->ctl_pipe_in);
@@ -361,73 +363,22 @@ int app_event_ctrlr_param_free(papp_event_ctlr_param pparam) {
     return 0;
 }
 
-// unused console way, currently
-static int app_console_sock(char *app_name) {
-    char app_home_path_v[PATH_MAX + 1], console_sock_path_v[PATH_MAX + 1];
-    int rc = 0, fd;
-    struct sockaddr_un addr;
-
-    if (NULL == app_name)
-        return -1;
-
-    rc = app_home_path(app_home_path_v, PATH_MAX + 1, app_name);
-    if (-1 == rc) {
-        IOT_ERROR("failed to get application home path: %d", rc);
-        return -1;
-    }
-
-    rc = app_console_sock_path(console_sock_path_v, PATH_MAX + 1, app_name);
-    if (-1 == rc) {
-        IOT_ERROR("failed to get application console socket path: %d", rc);
-        return -1;
-    }
-
-    fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (-1 == fd) {
-        IOT_ERROR("failed to create application console socket: %d", rc);
-        return -1;
-    }
-
-    memset(&addr, 0, sizeof(addr));
-    addr.sun_family = AF_UNIX;
-
-    strncpy(addr.sun_path, console_sock_path_v, sizeof(addr.sun_path)-1);
-
-    rc = bind(fd, (struct sockaddr*)&addr, sizeof(addr));
-    if (-1 == rc) {
-        IOT_ERROR("failed to bind application console AF_UNIX socket: %d", rc);
-        close(fd);
-        return -1;
-    }
-
-    rc = listen(fd, 5);
-    if (-1 == rc) {
-        IOT_ERROR("failed to listen application console AF_UNIX socket: %d", rc);
-        close(fd);
-        return -1;
-    }
-
-    IOT_INFO("the container console socket of application created, at %s", console_sock_path_v);
-
-    return fd;
-}
-
 static void* app_log_controller(void *p) {
-    char cmd[PATH_MAX * 2 + 20] = {0}, app_runc_path_v[PATH_MAX + 1], app_home_path_v[PATH_MAX + 1],
-        app_container_pid_path_v[PATH_MAX + 1];
+    char cmd[PATH_MAX * 2 + 20] = {0}, app_launcher_path_v[PATH_MAX + 1], app_home_path_v[PATH_MAX + 1],
+        app_process_pid_path_v[PATH_MAX + 1];
     papp_log_ctlr_param pparam = (papp_log_ctlr_param)p;
 
     pid_t pid;
-    int fd[2], rc = 0, container_pid;
+    int fd[2], rc = 0, process_pid;
 
     if (NULL == pparam) {
         rc = 1;
         goto release;
     }
 
-    rc = app_runc_path(app_runc_path_v, PATH_MAX + 1);
+    rc = app_launcher_path(app_launcher_path_v, PATH_MAX + 1, pparam->launcher_type);
     if (-1 == rc) {
-        IOT_ERROR("failed to get application runc path: %d", rc);
+        IOT_ERROR("failed to get application launcher path: %d", rc);
         rc = 1;
         goto release;
     }
@@ -439,7 +390,7 @@ static void* app_log_controller(void *p) {
         goto release;
     }
 
-    rc = app_container_pid_path(app_container_pid_path_v, PATH_MAX + 1, pparam->app_name);
+    rc = app_process_pid_path(app_process_pid_path_v, PATH_MAX + 1, pparam->app_name);
     if (-1 == rc) {
         IOT_ERROR("failed to get application pid file path: %d", rc);
         rc = 1;
@@ -457,8 +408,8 @@ static void* app_log_controller(void *p) {
 
         setvbuf(stdout, NULL, _IOLBF, 0);
 
-        execlp(app_runc_path_v, app_runc_path_v, "run", "--bundle", app_home_path_v, "--pid-file",
-               app_container_pid_path_v, pparam->app_name, NULL);
+        execlp(app_launcher_path_v, app_launcher_path_v, "run", "--bundle", app_home_path_v, "--pid-file",
+               app_process_pid_path_v, pparam->app_name, NULL);
     } else { // parent
         fd_set fds;
         int max_fd;
@@ -467,18 +418,18 @@ static void* app_log_controller(void *p) {
         IoT_Publish_Message_Params paramsQOS1;
         char payload[4096], topic[PATH_MAX + 50];
         IoT_Error_t rc = SUCCESS;
-        int topic_l, container_pid;
+        int topic_l, process_pid;
 
         close(fd[1]);
 
-        container_pid = app_pid(pparam->app_name, 1);
+        process_pid = app_pid(pparam->app_name, 1, pparam->launcher_type);
 
-        if (0 == container_pid) {
+        if (0 == process_pid) {
             rc = 1;
             goto release;
         }
 
-        add_app_deployed_pid(container_pid);
+        add_app_deployed_pid(process_pid);
 
         paramsQOS1.qos = QOS1;
         paramsQOS1.payload = (void *)payload;
@@ -495,7 +446,7 @@ static void* app_log_controller(void *p) {
 
             switch (select(max_fd + 1, &fds, NULL, NULL, NULL)) {
                 case -1: // select error
-                    IOT_ERROR("[CRITICAL] failed to listen container for application %s", pparam->app_name);
+                    IOT_ERROR("[CRITICAL] failed to listen process for application %s", pparam->app_name);
                     sleep(1);
                     break;
                 case 0:
@@ -505,8 +456,8 @@ static void* app_log_controller(void *p) {
                         read_len = read(fd[0], payload, 4096);
 
                         if (0 == read_len) { // EOF
-                            // container child process existed
-                            del_app_deployed_pid(container_pid);
+                            // process child process existed
+                            del_app_deployed_pid(process_pid);
                             waitpid(pid, 0, 0);
                             IOT_INFO("application %s log controller existed", pparam->app_name);
                             rc = 0;
@@ -553,7 +504,7 @@ release:
 }
 
 static void* app_event_controller(void *p) {
-    char cmd[PATH_MAX * 2 + 20] = {0}, app_runc_path_v[PATH_MAX + 1];
+    char cmd[PATH_MAX * 2 + 20] = {0}, app_launcher_path_v[PATH_MAX + 1];
     papp_event_ctlr_param pparam = (papp_event_ctlr_param)p;
     pid_t pid;
     int fd[2], rc = 0;
@@ -563,9 +514,9 @@ static void* app_event_controller(void *p) {
         goto release;
     }
 
-    rc = app_runc_path(app_runc_path_v, PATH_MAX + 1);
+    rc = app_launcher_path(app_launcher_path_v, PATH_MAX + 1, pparam->launcher_type);
     if (-1 == rc) {
-        IOT_ERROR("failed to get application runc path: %d", rc);
+        IOT_ERROR("failed to get application launcher path: %d", rc);
         rc = 1;
         goto release;
     }
@@ -581,7 +532,7 @@ static void* app_event_controller(void *p) {
         setvbuf(stdout, NULL, _IOLBF, 0);
 
         // stats collection interval default: 5s
-        execlp(app_runc_path_v, app_runc_path_v, "events", pparam->app_name, NULL);
+        execlp(app_launcher_path_v, app_launcher_path_v, "events", pparam->app_name, NULL);
     } else { // parent
         fd_set fds;
         int max_fd;
@@ -609,7 +560,7 @@ static void* app_event_controller(void *p) {
 
             switch (select(max_fd + 1, &fds, NULL, NULL, NULL)) {
                 case -1: // select error
-                    IOT_ERROR("[CRITICAL] failed to listen container for application %s", pparam->app_name);
+                    IOT_ERROR("[CRITICAL] failed to listen process for application %s", pparam->app_name);
                     sleep(1);
                     break;
                 case 0:
@@ -619,7 +570,7 @@ static void* app_event_controller(void *p) {
                         read_len = read_line(fd[0], payload, 4096);
 
                         if (0 == read_len) { // EOF
-                            // container child process existed
+                            // process child process existed
                             waitpid(pid, 0, 0);
                             IOT_INFO("application %s event controller existed", pparam->app_name);
                             rc = 0;
@@ -663,7 +614,7 @@ release:
     return (void *) (intptr_t)rc;
 }
 
-int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client) {
+int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client, int launcher_type) {
     papp_log_ctlr_param pparam_log;
     papp_event_ctlr_param pparam_event;
 
@@ -673,7 +624,7 @@ int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client) {
     if (NULL == app_name)
         return 1;
 
-    rc = app_log_ctrlr_param_create(app_name, paws_iot_client, &pparam_log);
+    rc = app_log_ctrlr_param_create(launcher_type, app_name, paws_iot_client, &pparam_log);
     if (0 != rc) {
         IOT_ERROR("failed to create log controller param for application %s: %d", app_name, rc);
         return rc;
@@ -687,14 +638,14 @@ int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client) {
     }
 
     // wait controller ready
-    while (0 == app_exists(app_name)) {
+    while (0 == app_exists(app_name, launcher_type)) {
         if (cnt++ < 5)
             sleep(1);
         else
             return 1;
     }
 
-    rc = app_event_ctrlr_param_create(app_name, paws_iot_client, &pparam_event);
+    rc = app_event_ctrlr_param_create(launcher_type, app_name, paws_iot_client, &pparam_event);
     if (0 != rc) {
         IOT_ERROR("failed to create event controller param for application %s: %d", app_name, rc);
         return rc;
@@ -712,19 +663,19 @@ int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client) {
     return rc;
 }
 
-int app_destroy(char *app_name) {
-    int rc = 1, container_pid = 0;
+int app_destroy(char *app_name, int launcher_type) {
+    int rc = 1, process_pid = 0;
     char work_dir_path[PATH_MAX + 1], app_home_path[PATH_MAX + 1], cmd[PATH_MAX + 10] = {0};
 
-    container_pid = app_pid(app_name, 0);
-    if (0 == container_pid)
+    process_pid = app_pid(app_name, 0, launcher_type);
+    if (0 == process_pid)
         return 1;
 
     while (rc) {
-        app_kill(container_pid);
-        IOT_DEBUG("waiting application container exists, pid: %d", container_pid);
+        app_kill(process_pid);
+        IOT_DEBUG("waiting application process exists, pid: %d", process_pid);
         sleep(1);
-        rc = app_exists(app_name);
+        rc = app_exists(app_name, launcher_type);
     }
 
     getcwd(work_dir_path, PATH_MAX + 1);

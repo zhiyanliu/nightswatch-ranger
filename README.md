@@ -123,7 +123,7 @@ export https_proxy=$http_proxy
 
 - `unzip`: If you need DMP agent supports Certificate and Agent OTA opertion. Install it on Ubuntu by ``apt-get install unzip``.
 - `tar`: If you need DMP agent supports Application Deployment operation.
-- `runc`: If you need DMP agent supports Application Deployment operation. Refer RUNC at [here](https://github.com/opencontainers/runc).
+- `runc`: If you need DMP agent supports Application Deployment operation with container mode. Refer RUNC at [here](https://github.com/opencontainers/runc).
 
 ## Troubleshooting
 

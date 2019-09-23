@@ -37,12 +37,13 @@ static int32_t _token_c;
 
 
 static int parse_job_doc(pjob pj, char *app_name, size_t app_name_l, char *pkg_url, size_t pkg_url_l,
-        unsigned char *pkg_md5, size_t pkg_md5_l, char *app_args, size_t app_args_l, bool *force) {
+        unsigned char *pkg_md5, size_t pkg_md5_l, char *app_args, size_t app_args_l,
+        bool *force, bool *use_container) {
 
     IoT_Error_t rc = FAILURE;
-    jsmntok_t *tok_app_name, *tok_pkg_url, *tok_pkg_md5, *tok_app_args, *tok_force;
+    jsmntok_t *tok_app_name, *tok_pkg_url, *tok_pkg_md5, *tok_app_args, *tok_force, *tok_use_container;
 
-    int force_flag = 0;
+    int force_flag = 0, use_container_flag = 0;
 
     jsmn_init(&_json_parser);
     _token_c = jsmn_parse(&_json_parser, pj->job_doc, (int)pj->job_doc_l,
@@ -80,7 +81,13 @@ static int parse_job_doc(pjob pj, char *app_name, size_t app_name_l, char *pkg_u
     if (NULL != tok_force)  // optional flag
         force_flag = 1;
     else
-        *force = 0;
+        *force = 0;  // by default False
+
+    tok_use_container = findToken(JOB_APP_USE_CONTAINER_PROPERTY_NAME, pj->job_doc, _json_tok_v);
+    if (NULL != tok_use_container) // optional flag
+        use_container_flag = 1;
+    else
+        *use_container = 1;  // by default True
 
     rc = parseStringValue(app_name, app_name_l, pj->job_doc, tok_app_name);
     if (SUCCESS != rc) {
@@ -114,24 +121,38 @@ static int parse_job_doc(pjob pj, char *app_name, size_t app_name_l, char *pkg_u
         }
     }
 
+    if (use_container_flag) {
+        rc = parseBooleanValue((bool*)use_container, pj->job_doc, tok_use_container);
+        if (SUCCESS != rc) {
+            IOT_ERROR("failed to parse application uses container deploy flag: %d", rc);
+            return rc;
+        }
+    }
+
     return 0;
 }
 
 static int step1_check_app_deployed(pjob_dispatch_param pparam, char *app_name, size_t app_name_l,
         char *pkg_url, size_t pkg_url_l, unsigned char *pkg_md5_dst, size_t pkg_md5_l,
-        char *app_args, size_t app_args_l) {
+        char *app_args, size_t app_args_l, int *launcher_type) {
 
     int rc = 0;
-    bool force;
+    bool force, use_container;
 
     rc = parse_job_doc(pparam->pj, app_name, app_name_l, pkg_url, pkg_url_l,
-            pkg_md5_dst, pkg_md5_l, app_args, app_args_l, &force);
+            pkg_md5_dst, pkg_md5_l, app_args, app_args_l, &force, &use_container);
     if (0 != rc) {
         IOT_ERROR("failed to parse job doc for deploy application operation: %d", rc);
         return rc;
     }
 
-    rc = app_exists(app_name);
+    if (use_container)
+        // using runc by default
+        *launcher_type = IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUNC;
+    else
+        *launcher_type = IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUND;
+
+    rc = app_exists(app_name, *launcher_type);
     if (1 == rc) {
         if (force) {
             IOT_WARN("application %s was deployed on this device already: %d", app_name, rc);
@@ -145,42 +166,38 @@ static int step1_check_app_deployed(pjob_dispatch_param pparam, char *app_name, 
 }
 
 static int step2_download_pkg_file(pjob_dispatch_param pparam, char *pkg_url, unsigned char *pkg_md5_dst,
-        char *work_dir_path, char *app_name, char *app_home_path, size_t app_home_path_l,
+        char *app_name, char *app_home_path_buff, size_t app_home_path_buff_l,
         char *app_pkg_file_path, size_t app_pkg_file_path_l) {
 
     char cmd[PATH_MAX + 10] = {0};
     int rc = 0;
 
-    if (NULL == work_dir_path)
-        return 1;
-
     if (NULL == app_name)
         return 1;
 
-    if (NULL == app_home_path)
+    if (NULL == app_home_path_buff)
         return 1;
 
     if (NULL == app_pkg_file_path)
         return 1;
 
-    snprintf(app_home_path, app_home_path_l, "%s/%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_APPS_DIR, app_name);
+    app_home_path(app_home_path_buff, app_home_path_buff_l, app_name);
 
-    snprintf(cmd, PATH_MAX + 10, "rm -rf %s", app_home_path);
+    snprintf(cmd, PATH_MAX + 10, "rm -rf %s", app_home_path_buff);
 
     rc = system(cmd);
     if (0 != rc) {
-        IOT_ERROR("failed to unlink existing application at %s: %d", app_home_path, rc);
+        IOT_ERROR("failed to unlink existing application at %s: %d", app_home_path_buff, rc);
         return rc; // application name is invalid as a part of path?
     }
 
-    rc = mkdir(app_home_path, S_IRWXU | S_IRWXG);
+    rc = mkdir(app_home_path_buff, S_IRWXU | S_IRWXG);
     if (0 != rc) {
         IOT_ERROR("failed to create application home directory: %d", rc);
         return rc;
     }
 
-    snprintf(app_pkg_file_path, app_pkg_file_path_l, "%s/app.tar.gz", app_home_path);
+    snprintf(app_pkg_file_path, app_pkg_file_path_l, "%s/app.tar.gz", app_home_path_buff);
 
     IOT_DEBUG("download application package to %s from %s", app_pkg_file_path, pkg_url);
 
@@ -259,26 +276,22 @@ static int step4_extract_pkg_file(pjob_dispatch_param pparam, char *app_root_pat
     return rc;
 }
 
-static int step5_config_runc_spec(pjob_dispatch_param pparam, char *work_dir_path, char *app_home_path,
-        char *app_args, char *app_spec_path, size_t app_spec_path_l) {
+static int step5_config_launcher_spec(pjob_dispatch_param pparam, char *app_name,
+        char *app_args, char *app_spec_path_buff, size_t app_spec_path_buff_l, int launcher_type) {
 
-    // info(zhiyan): https://github.com/opencontainers/runtime-spec/blob/master/config-linux.md
-
-    char cmd[PATH_MAX * 3 + 20] = {0}, app_spec_path_ori[PATH_MAX + 1];
+    char cmd[PATH_MAX * 3 + 20] = {0}, app_spec_path_buff_ori[PATH_MAX + 1];
     int rc = 0;
 
-    if (NULL == app_home_path)
+    if (NULL == app_spec_path_buff)
         return 1;
 
-    if (NULL == app_spec_path)
-        return 1;
+    // info(zhiyan): runc spec ref at https://github.com/opencontainers/runtime-spec/blob/master/config-linux.md
 
-    snprintf(app_spec_path_ori, PATH_MAX + 1, "%s/%s/%s.tpl", work_dir_path,
-            IROOTECH_DMP_RP_AGENT_APPS_DIR, IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE);
-    snprintf(app_spec_path, app_spec_path_l, "%s/%s", app_home_path,
-            IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE);
+    app_spec_tpl_path(app_spec_path_buff_ori, PATH_MAX + 1, launcher_type);
+    app_spec_path(app_spec_path_buff, app_spec_path_buff_l, app_name);
 
-    snprintf(cmd, PATH_MAX * 3 + 20, "sed 's/{args}/%s/g' %s > %s", app_args, app_spec_path_ori, app_spec_path);
+    snprintf(cmd, PATH_MAX * 3 + 20, "sed 's/{args}/%s/g' %s > %s",
+            app_args, app_spec_path_buff_ori, app_spec_path_buff);
 
     rc = system(cmd);
     if (0 != rc) {
@@ -286,33 +299,30 @@ static int step5_config_runc_spec(pjob_dispatch_param pparam, char *work_dir_pat
         return rc;
     }
 
-    IOT_INFO("application spec generated at %s", app_spec_path);
+    IOT_INFO("application spec generated at %s", app_spec_path_buff);
 
     return rc;
 }
 
 int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
-    char work_dir_path[PATH_MAX + 1], app_name[PATH_MAX + 1], pkg_url[4096],
-        app_home_path[PATH_MAX + 1], app_pkg_file_path[PATH_MAX + 1], app_root_path[PATH_MAX + 1],
-        app_args[PATH_MAX + 1], app_spec_path[PATH_MAX + 1];
+    char app_name[PATH_MAX + 1], pkg_url[4096], app_home_path[PATH_MAX + 1], app_pkg_file_path[PATH_MAX + 1],
+        app_root_path[PATH_MAX + 1], app_args[PATH_MAX + 1], app_spec_path[PATH_MAX + 1];
 
     unsigned char pkg_md5_src[MD5_SUM_LENGTH + 1], pkg_md5_dst[MD5_SUM_LENGTH + 1];
-    int rc = 0;
+    int launcher_type = 0, rc = 0;
 
     // TODO(production): check free disk space, reject the operate if needed.
 
-    getcwd(work_dir_path, PATH_MAX + 1);
-
     rc = step1_check_app_deployed(pparam, app_name, PATH_MAX + 1, pkg_url, 4096,
-            pkg_md5_dst, MD5_SUM_LENGTH + 1, app_args, PATH_MAX + 1);
+            pkg_md5_dst, MD5_SUM_LENGTH + 1, app_args, PATH_MAX + 1, &launcher_type);
     if (1000 == rc) {  // force deploy
         dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-                "{\"detail\":\"Destroying existing application container to force deploy.\"}");
+                "{\"detail\":\"Destroying existing application process to force deploy.\"}");
 
-        rc = app_destroy(app_name);
+        rc = app_destroy(app_name, launcher_type);
         if (0 != rc) {
             dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-                    "{\"detail\":\"Failed to destroy existing application container.\"}");
+                    "{\"detail\":\"Failed to destroy existing application process.\"}");
             return rc;
         }
     } else if (0 != rc) {
@@ -324,7 +334,7 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Downloading application package to the device.\"}");
 
-    rc = step2_download_pkg_file(pparam, pkg_url, pkg_md5_dst, work_dir_path, app_name,
+    rc = step2_download_pkg_file(pparam, pkg_url, pkg_md5_dst, app_name,
             app_home_path, PATH_MAX + 1, app_pkg_file_path, PATH_MAX + 1);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
@@ -356,24 +366,24 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
     }
 
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-            "{\"detail\":\"Configure the container spec of application.\"}");
+            "{\"detail\":\"Configure the process spec of application.\"}");
 
-    rc = step5_config_runc_spec(pparam, work_dir_path, app_home_path, app_args, app_spec_path, PATH_MAX + 1);
+    rc = step5_config_launcher_spec(pparam, app_name, app_args, app_spec_path, PATH_MAX + 1, launcher_type);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-                "{\"detail\":\"Failed to configure the container spec of application.\"}");
+                "{\"detail\":\"Failed to configure the process spec of application.\"}");
         return rc;
     }
 
     // TODO(production): book the locally deployed application info at somewhere.
 
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-            "{\"detail\":\"Deploying application container.\"}");
+            "{\"detail\":\"Deploying application process.\"}");
 
-    rc = app_deploy(app_name, pparam->paws_iot_client);
+    rc = app_deploy(app_name, pparam->paws_iot_client, launcher_type);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
-                "{\"detail\":\"Failed to deploy application container.\"}");
+                "{\"detail\":\"Failed to deploy application process.\"}");
         return rc;
     }
 
