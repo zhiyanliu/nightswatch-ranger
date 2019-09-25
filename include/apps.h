@@ -11,7 +11,9 @@
 #include "aws_iot_mqtt_client_interface.h"
 
 
-#define IROOTECH_DMP_RP_AGENT_APPS_DIR "../../apps"
+#ifndef IROOTECH_DMP_RP_AGENT_APPS_DIR
+    #define IROOTECH_DMP_RP_AGENT_APPS_DIR "../../apps"
+#endif
 #define IROOTECH_DMP_RP_AGENT_APP_ROOT_DIR "rootfs"
 #define IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE "config.json"
 #define IROOTECH_DMP_RP_AGENT_APP_PROCESS_PID_FILE "pid"
@@ -70,8 +72,6 @@ int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client, int launcher_typ
 int app_destroy(char *app_name, int launcher_type);
 
 int app_send_signal(int pid, int signo);
-
-int apps_send_signal(int signo);
 
 int app_kill();
 

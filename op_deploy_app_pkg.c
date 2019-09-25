@@ -62,19 +62,19 @@ static int parse_job_doc(pjob pj, char *app_name, size_t app_name_l, char *pkg_u
     tok_pkg_url = findToken(JOB_PKG_URL_PROPERTY_NAME, pj->job_doc, _json_tok_v);
     if (NULL == tok_pkg_url) {
         IOT_WARN("job package url property %s not found, nothing to do", JOB_PKG_URL_PROPERTY_NAME);
-        return 2;
+        return 3;
     }
 
     tok_pkg_md5 = findToken(JOB_PKG_MD5_PROPERTY_NAME, pj->job_doc, _json_tok_v);
     if (NULL == tok_pkg_md5) {
         IOT_WARN("job package md5 property %s not found, nothing to do", JOB_PKG_MD5_PROPERTY_NAME);
-        return 3;
+        return 4;
     }
 
     tok_app_args = findToken(JOB_APP_ARGS_PROPERTY_NAME, pj->job_doc, _json_tok_v);
     if (NULL == tok_app_args) {
         IOT_WARN("job application arguments property %s not found, nothing to do", JOB_APP_ARGS_PROPERTY_NAME);
-        return 3;
+        return 5;
     }
 
     tok_force = findToken(JOB_APP_FORCE_PROPERTY_NAME, pj->job_doc, _json_tok_v);
@@ -166,7 +166,7 @@ static int step1_check_app_deployed(pjob_dispatch_param pparam, char *app_name, 
 }
 
 static int step2_download_pkg_file(pjob_dispatch_param pparam, char *pkg_url, unsigned char *pkg_md5_dst,
-        char *app_name, char *app_home_path_buff, size_t app_home_path_buff_l,
+        char *app_name, char *app_home_path_v, size_t app_home_path_v_l,
         char *app_pkg_file_path, size_t app_pkg_file_path_l) {
 
     char cmd[PATH_MAX + 10] = {0};
@@ -175,29 +175,29 @@ static int step2_download_pkg_file(pjob_dispatch_param pparam, char *pkg_url, un
     if (NULL == app_name)
         return 1;
 
-    if (NULL == app_home_path_buff)
+    if (NULL == app_home_path_v)
         return 1;
 
     if (NULL == app_pkg_file_path)
         return 1;
 
-    app_home_path(app_home_path_buff, app_home_path_buff_l, app_name);
+    app_home_path(app_home_path_v, app_home_path_v_l, app_name);
 
-    snprintf(cmd, PATH_MAX + 10, "rm -rf %s", app_home_path_buff);
+    snprintf(cmd, PATH_MAX + 10, "rm -rf %s", app_home_path_v);
 
     rc = system(cmd);
     if (0 != rc) {
-        IOT_ERROR("failed to unlink existing application at %s: %d", app_home_path_buff, rc);
+        IOT_ERROR("failed to unlink existing application at %s: %d", app_home_path_v, rc);
         return rc; // application name is invalid as a part of path?
     }
 
-    rc = mkdir(app_home_path_buff, S_IRWXU | S_IRWXG);
+    rc = mkdir(app_home_path_v, S_IRWXU | S_IRWXG);
     if (0 != rc) {
         IOT_ERROR("failed to create application home directory: %d", rc);
         return rc;
     }
 
-    snprintf(app_pkg_file_path, app_pkg_file_path_l, "%s/app.tar.gz", app_home_path_buff);
+    snprintf(app_pkg_file_path, app_pkg_file_path_l, "%s/app.tar.gz", app_home_path_v);
 
     IOT_DEBUG("download application package to %s from %s", app_pkg_file_path, pkg_url);
 
@@ -258,7 +258,7 @@ static int step4_extract_pkg_file(pjob_dispatch_param pparam, char *app_root_pat
     IOT_DEBUG("extract application package %s to %s", app_pkg_file_path, app_root_path);
 
     snprintf(cmd, PATH_MAX * 2 + 20, "tar zxf %s -C %s", app_pkg_file_path, app_root_path);
-    // the package created by this kind of command:
+    // the runc container package created by this kind of command:
     //   docker export $(docker create busybox) | tar -C rootfs -xvf -
     //   tar -C rootfs -czf app_xxx_pkg.tar.gz --owner=0 --group=0 ./
 
@@ -277,21 +277,30 @@ static int step4_extract_pkg_file(pjob_dispatch_param pparam, char *app_root_pat
 }
 
 static int step5_config_launcher_spec(pjob_dispatch_param pparam, char *app_name,
-        char *app_args, char *app_spec_path_buff, size_t app_spec_path_buff_l, int launcher_type) {
+        char *app_args, char *app_spec_path_v, size_t app_spec_path_v_l, int launcher_type) {
 
-    char cmd[PATH_MAX * 3 + 20] = {0}, app_spec_path_buff_ori[PATH_MAX + 1];
+    char cmd[PATH_MAX * 3 + 20] = {0}, app_spec_path_v_ori[PATH_MAX + 1];
     int rc = 0;
 
-    if (NULL == app_spec_path_buff)
+    if (NULL == app_spec_path_v)
         return 1;
 
     // info(zhiyan): runc spec ref at https://github.com/opencontainers/runtime-spec/blob/master/config-linux.md
 
-    app_spec_tpl_path(app_spec_path_buff_ori, PATH_MAX + 1, launcher_type);
-    app_spec_path(app_spec_path_buff, app_spec_path_buff_l, app_name);
+    rc = app_spec_tpl_path(app_spec_path_v_ori, PATH_MAX + 1, launcher_type);
+    if (-1 == rc) {
+        IOT_ERROR("failed to get application spec template file path: %d", rc);
+        return rc;
+    }
+
+    rc = app_spec_path(app_spec_path_v, app_spec_path_v_l, app_name);
+    if (-1 == rc) {
+        IOT_ERROR("failed to get application spec file path: %d", rc);
+        return rc;
+    }
 
     snprintf(cmd, PATH_MAX * 3 + 20, "sed 's/{args}/%s/g' %s > %s",
-            app_args, app_spec_path_buff_ori, app_spec_path_buff);
+            app_args, app_spec_path_v_ori, app_spec_path_v);
 
     rc = system(cmd);
     if (0 != rc) {
@@ -299,7 +308,7 @@ static int step5_config_launcher_spec(pjob_dispatch_param pparam, char *app_name
         return rc;
     }
 
-    IOT_INFO("application spec generated at %s", app_spec_path_buff);
+    IOT_INFO("application spec generated at %s", app_spec_path_v);
 
     return rc;
 }

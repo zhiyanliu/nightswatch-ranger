@@ -15,7 +15,7 @@
 
 
 /*
- * we handle job message one by one, no concurrent process.
+  * we handle job message one by one, no concurrent process.
  * so reuse follow single parser, token vector and token counter to save resource.
  */
 static jsmn_parser _json_parser;

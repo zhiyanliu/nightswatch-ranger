@@ -55,25 +55,33 @@ As a C lang project, it needs Build tool and GCC toolchain to compile and link t
 1. `git clone ssh://git-codecommit.ap-northeast-1.amazonaws.com/v1/repos/irootech-dmp-rp-agent`
 2. `cd irootech-dmp-rp-agent`
 3. ``source <QuecOpen Linux SDK>/ql-ol-crosstool/ql-ol-crosstool-env-init``, do this for cross compiling for QuecOpen Linux platform only, and execute this for each new session, environment varibables are exported and dedicated.
-4. ``make``, and inary `dmpagent` is built out to current directory if build process is executed successfully.
+4. ``make``, `dmpagent` and `dmprund` binaries are built out to current directory if build process is executed successfully.
+5. ``make install``, Install compiled binaries to their running directory.
 
-#### Advanced
+### Advanced
 
 Build supports follow 7 targets currently, e.g. you can execute `make libawsiot.a` to build AWS IoT SDK library only.
 
 1. `aws-iot-device-sdk-embedded-C` Get AWS IoT SDK vendor package.
 2. `libawsiot.a` Compile AWS IoT SDK static library.
 3. `dmpagent` Compile and link DMP agent binary.
-4. `install` Install agent binary to bin directory with dual partitions structure of agent OTA.
-5. `all` Currently it does `install` target only. Default target.
-6. `vendor_clean` Remove local AWS IoT SDK vendor package and compiled static library.
-7. `clean` Remove all output files of last build, prepare for next complete and clean DMP agent build.
+4. `dmprund` Compile and link DMP application launcher binary.
+5. `all` Currently it does `dmpagent` and `dmprund` targets. Default target.
+6. `install` Install the agent and the launcher binaries to bin directory with dual partitions structure of agent OTA and apps directory .
+7. `vendor_clean` Remove local AWS IoT SDK vendor package and compiled static library.
+8. `clean` Remove all output files of last build, prepare for next complete and clean DMP agent build.
 
 >>**Note:**
 >>
 >> libawsiot.a static library works for current project and client only due to it contains your special configuration e.g. IoT MQTT server address and port, client id for the device. So don't copy this file to other embedded C project or your different device. From engineering perspective, this libraray is used to separate common AWS IoT SDK from the DMP agent business logic as an upstream vendor package, as the result, you can do `make aws-iot-device-sdk-embedded-C` to get vendor code outside this DMP agent project repository and keep it up-to-date.
 >>
 >> In future, you can extract and parameterize these configurations out of the libraray, however it means you need to change AWS IoT SDK code or enhance Build logic.
+
+### Deployment directory struccture
+
+```
+
+```
 
 ## How to config
 

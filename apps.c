@@ -234,6 +234,7 @@ int app_pid(char *app_name, int wait_app, int launcher_type) {
                 return rc;
             }
         }
+        sleep(1);
     } while (0 == rc);
 
     rc = app_process_pid_path(pid_file_path_v, PATH_MAX + 1, app_name);
@@ -408,8 +409,10 @@ static void* app_log_controller(void *p) {
 
         setvbuf(stdout, NULL, _IOLBF, 0);
 
-        execlp(app_launcher_path_v, app_launcher_path_v, "run", "--bundle", app_home_path_v, "--pid-file",
-               app_process_pid_path_v, pparam->app_name, NULL);
+        rc = execlp(app_launcher_path_v, app_launcher_path_v, "run", "--bundle", app_home_path_v, "--pid-file",
+                app_process_pid_path_v, pparam->app_name, NULL);
+        if (-1 == rc)
+            IOT_ERROR("failed to launch the process for application %s, errno = %d", pparam->app_name, errno);
     } else { // parent
         fd_set fds;
         int max_fd;
@@ -458,6 +461,7 @@ static void* app_log_controller(void *p) {
                         if (0 == read_len) { // EOF
                             // process child process existed
                             del_app_deployed_pid(process_pid);
+                            IOT_DEBUG("wait application launcher exists");
                             waitpid(pid, 0, 0);
                             IOT_INFO("application %s log controller existed", pparam->app_name);
                             rc = 0;
@@ -710,7 +714,16 @@ int app_send_signal(int pid, int signo) {
     return 0;
 }
 
-int apps_send_signal(int signo) {
+int app_kill(int pid) {
+    int rc;
+
+    rc = app_send_signal(pid, SIGKILL);
+    if (0 == rc)
+        waitpid(pid, 0, 0);
+    return rc;
+}
+
+int apps_kill() {
     size_t i = 0;
     int pid = -1, rc = 0;
 
@@ -719,18 +732,10 @@ int apps_send_signal(int signo) {
         if (0 >= pid)
             continue;
 
-        rc = app_send_signal(pid, signo);
+        rc = app_kill(pid);
         if (0 != rc)
-            IOT_WARN("failed to send signal %d to application (pid %d), ignored", signo, pid);
+            IOT_ERROR("failed to kill application process (pid %d)", pid);
     }
 
     return 0;
-}
-
-int app_kill(int pid) {
-    return app_send_signal(pid, SIGKILL);
-}
-
-int apps_kill() {
-    return apps_send_signal(SIGKILL);
 }
