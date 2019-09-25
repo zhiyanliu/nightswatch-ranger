@@ -77,10 +77,30 @@ Build supports follow 7 targets currently, e.g. you can execute `make libawsiot.
 >>
 >> In future, you can extract and parameterize these configurations out of the libraray, however it means you need to change AWS IoT SDK code or enhance Build logic.
 
-### Deployment directory struccture
+### Deployment directory structure
 
 ```
-
+<DMP_AGENT_HOME_DIR>
+├── [lrwxrwxrwx]  agent -> bin/p1/dmpagent
+├── [drwxr-xr-x]  apps
+│   ├── [-rw-rw-r--]  config.json.runc.tpl
+│   ├── [-rw-rw-r--]  config.json.rund.tpl
+│   ├── [-rwxrwxr-x]  runc
+│   └── [-rwxr-xr-x]  rund
+├── [drwxr-xr-x]  bin
+│   ├── [drwxr-xr-x]  p1
+│   │   └── [-rwxr-xr-x]  dmpagent
+│   └── [drwxrwxr-x]  p2
+├── [drwxr-xr-x]  certs
+│   ├── [lrwxrwxrwx]  latest -> ./p1
+│   ├── [drwxr-xr-x]  p1
+│   │   ├── [-rw-r--r--]  cert.pem
+│   │   ├── [-rw-r--r--]  private.key
+│   │   ├── [-rw-r--r--]  public.key
+│   │   └── [-rw-r--r--]  root-ca.crt
+│   └── [drwxr-xr-x]  p2
+└── [drwxrwxr-x]  funcs
+    └── [drwxrwxr-x]  router
 ```
 
 ## How to config
