@@ -36,6 +36,8 @@ typedef struct {
     char app_name[PATH_MAX + 1];
     int ctl_pipe_in[2], ctl_pipe_out[2]; // 0: r, 1: w;
     AWS_IoT_Client *paws_iot_client;
+    pthread_mutex_t lock;
+    pthread_cond_t cond;
 } app_log_ctlr_param, *papp_log_ctlr_param;
 
 
@@ -67,7 +69,7 @@ int app_exists(char *app_name, int launcher_type);
 
 int app_pid(char *app_name, int wait_app, int launcher_type);
 
-int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client, int launcher_type);
+int app_deploy(char *app_name, int launcher_type, AWS_IoT_Client *paws_iot_client);
 
 int app_destroy(char *app_name, int launcher_type);
 

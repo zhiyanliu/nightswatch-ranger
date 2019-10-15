@@ -14,6 +14,7 @@
 #include "aws_iot_log.h"
 
 #include "apps.h"
+#include "apps_store.h"
 #include "agent.h"
 #include "client.h"
 #include "certs.h"
@@ -170,7 +171,7 @@ client_connect_ret client_connect(pdmp_dev_client *ppclient, IoT_Error_t *iot_rc
     return CERTS_FALLBACK_CONN_SUCCESS;
 }
 
-IoT_Error_t run(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id, int upd_dev_ca_works) {
+IoT_Error_t subscribe(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id, int upd_dev_ca_works) {
     IoT_Error_t rc = FAILURE;
     pjob_dispatcher pdispatcher = job_dispatcher_bootstrap();
 
@@ -215,9 +216,20 @@ IoT_Error_t run(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id
         return rc;
     }
 
+    return rc;
+}
+
+IoT_Error_t run(pdmp_dev_client pclient) {
+    IoT_Error_t rc = FAILURE;
+
     IOT_DEBUG("ask job to process")
 
-    rc = dmp_dev_client_job_ask(pclient);
+    do {
+        rc = dmp_dev_client_job_ask(pclient);
+        if (MQTT_CLIENT_NOT_IDLE_ERROR == rc)
+            usleep(100); // faster timeout than yield() in main thread loop
+    } while (MQTT_CLIENT_NOT_IDLE_ERROR == rc);
+
     if (SUCCESS != rc) {
         IOT_ERROR("failed to ask job to process: %d", rc);
         return rc;
@@ -324,15 +336,33 @@ int main(int argc, char **argv) {
 
     s3_http_init();
 
-    iot_rc = run(pclient, upd_dev_ca, upd_dev_ca_job_id, upd_dev_ca_works);
+    iot_rc = subscribe(pclient, upd_dev_ca, upd_dev_ca_job_id, upd_dev_ca_works);
     if (SUCCESS != iot_rc)
-        IOT_ERROR("failed to run client: %d", iot_rc);
+        IOT_ERROR("failed to subscribe job event from the cloud: %d", iot_rc);
+
+    rc = apps_store_init();
+    if (0 != rc) {
+        IOT_ERROR("failed to init application store, skip to launch already deployed application(s): %d", rc);
+    } else {
+        // launch deployed applications
+        rc = apps_traverse_records(&pclient->c, apps_launch);
+        if (0 != rc)
+            IOT_WARN("failed to launch %d deployed application(s), ignored", rc);
+    }
+
+    iot_rc = run(pclient);
+    if (SUCCESS != iot_rc)
+        IOT_ERROR("failed to run client job event loop: %d", iot_rc);
+
+    apps_kill();
+
+    apps_store_free();
 
     funcs_shutdown();
 
-release:
     s3_http_free();
 
+release:
     dmp_dev_client_free(pclient);
 
     return iot_rc;

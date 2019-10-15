@@ -20,6 +20,7 @@
 #include "aws_iot_log.h"
 
 #include "apps.h"
+#include "apps_store.h"
 #include "aws_iot_config.h"
 #include "client.h"
 #include "job_dispatch.h"
@@ -125,6 +126,14 @@ int op_destroy_app_pkg_entry(pjob_dispatch_param pparam) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to destroy application process.\"}");
         return rc;
+    }
+
+    rc = app_unregister(app_name, launcher_type);
+    if (0 != rc) {
+        IOT_ERROR("failed to unregister application %s (launcher-type=%d) from local store, ignored",
+                  app_name, launcher_type);
+    } else {
+        IOT_DEBUG("application %s (launcher-type=%d) is unregistered from local store", app_name, launcher_type);
     }
 
     rc = dmp_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,

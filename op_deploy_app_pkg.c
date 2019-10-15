@@ -18,6 +18,7 @@
 #include "aws_iot_log.h"
 
 #include "apps.h"
+#include "apps_store.h"
 #include "aws_iot_config.h"
 #include "client.h"
 #include "job_dispatch.h"
@@ -334,6 +335,15 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
                     "{\"detail\":\"Failed to destroy existing application process.\"}");
             return rc;
         }
+
+        rc = app_unregister(app_name, launcher_type);
+        if (0 != rc) {
+            IOT_ERROR("failed to unregister application %s (launcher-type=%d) from local store, ignored",
+                    app_name, launcher_type);
+        } else {
+            IOT_DEBUG("application %s (launcher-type=%d) is unregistered from local store",
+                    app_name, launcher_type);
+        }
     } else if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Application was deployed on this device already.\"}");
@@ -389,11 +399,19 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
     dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Deploying application process.\"}");
 
-    rc = app_deploy(app_name, pparam->paws_iot_client, launcher_type);
+    rc = app_deploy(app_name, launcher_type, pparam->paws_iot_client);
     if (0 != rc) {
         dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to deploy application process.\"}");
         return rc;
+    }
+
+    rc = app_register(app_name, launcher_type);
+    if (0 != rc) {
+        IOT_ERROR("failed to register application %s (launcher-type=%d) to local store, ignored",
+                app_name, launcher_type);
+    } else {
+        IOT_DEBUG("application %s (launcher-type=%d) is registered to local store", app_name, launcher_type);
     }
 
     rc = dmp_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,

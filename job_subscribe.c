@@ -52,6 +52,7 @@ IoT_Error_t dmp_dev_client_job_listen_next(pdmp_dev_client pclient, pjob_dispatc
             next_job_callback_handler, pparam, pclient->tpc_sub_notify_next, MAX_JOB_TOPIC_LENGTH_BYTES);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to subscribe topic $aws/things/{thing-name}/jobs/notify-next: %d", rc);
+        free(pparam);
         return rc;
     }
 
@@ -60,6 +61,7 @@ IoT_Error_t dmp_dev_client_job_listen_next(pdmp_dev_client pclient, pjob_dispatc
             next_job_callback_handler, pparam, pclient->tpc_sub_get_next, MAX_JOB_TOPIC_LENGTH_BYTES);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to subscribe topic $aws/things/{thing-name}/jobs/$next/get/+: %d", rc);
+        free(pparam);
     }
 
     return rc;
@@ -86,6 +88,7 @@ IoT_Error_t dmp_dev_client_job_listen_update(pdmp_dev_client pclient, pjob_dispa
             update_accepted_callback_handler, pparam, pclient->tpc_sub_upd_accepted, MAX_JOB_TOPIC_LENGTH_BYTES);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to subscribe topic $aws/things/{thing-name}/jobs/+/update/accepted: %d", rc);
+        free(pparam);
         return rc;
     }
 
@@ -93,6 +96,7 @@ IoT_Error_t dmp_dev_client_job_listen_update(pdmp_dev_client pclient, pjob_dispa
             &pclient->c, QOS0, pclient->thing_name, JOB_ID_WILDCARD, JOB_UPDATE_TOPIC, JOB_REJECTED_REPLY_TYPE,
             update_rejected_callback_handler, pparam, pclient->tpc_sub_upd_rejected, MAX_JOB_TOPIC_LENGTH_BYTES);
     if (SUCCESS != rc) {
+        free(pparam);
         IOT_ERROR("failed to subscribe topic $aws/things/{thing-name}/jobs/+/update/rejected: %d", rc);
     }
 
@@ -110,7 +114,8 @@ IoT_Error_t dmp_dev_client_job_ask(pdmp_dev_client pclient) {
     // $aws/things/{thing-name}/jobs/$next
     rc = aws_iot_jobs_describe(&pclient->c, QOS0, pclient->thing_name, JOB_ID_NEXT, &desc_req,
             pclient->tpc_pub_get_next, MAX_JOB_TOPIC_LENGTH_BYTES, NULL, 0);
-    if (SUCCESS != rc) {
+    if (SUCCESS != rc &&
+            MQTT_CLIENT_NOT_IDLE_ERROR != rc) {  // handle MQTT_CLIENT_NOT_IDLE_ERROR outside, it is tolerable
         IOT_ERROR("failed to describe topic $aws/things/{thing-name}/jobs/$next: %d", rc);
     }
 
@@ -127,6 +132,11 @@ IoT_Error_t dmp_dev_client_job_loop(pdmp_dev_client pclient) {
         // max time the yield function will wait for read messages
         rc = aws_iot_mqtt_yield(&pclient->c, 500);
         // yield() must be called at a rate faster than the keepalive interval and MQTT message incoming
+        if (NETWORK_ATTEMPTING_RECONNECT == rc) {
+            IOT_WARN("network disconnected, attempting reconnect...");
+        } else if (NETWORK_RECONNECTED == rc) {
+            IOT_INFO("network reconnected");
+        }
         sleep(2);
     } while(SUCCESS == rc || MQTT_CLIENT_NOT_IDLE_ERROR == rc ||
         NETWORK_ATTEMPTING_RECONNECT == rc || NETWORK_RECONNECTED == rc);
@@ -281,5 +291,5 @@ static void update_rejected_callback_handler(AWS_IoT_Client *client, char *topic
     IOT_ERROR("job update rejected, topic: %.*s:", topic_name_l, topic_name);
     IOT_ERROR("payload: %.*s", (int) params->payloadLen, (char *)params->payload);
 
-    // do error handling here for when the update was rejected.
+    // do error handling here for when the update was rejected, will retry.
 }

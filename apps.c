@@ -294,6 +294,22 @@ int app_log_ctrlr_param_create(int launcher_type, char *app_name, AWS_IoT_Client
 
     (*ppparam)->paws_iot_client = paws_iot_client;
 
+    rc = pthread_mutex_init(&(*ppparam)->lock, NULL);
+    if (0 != rc) {
+        free(*ppparam);
+        close((*ppparam)->ctl_pipe_in[0]);
+        close((*ppparam)->ctl_pipe_in[1]);
+        return rc;
+    }
+
+    rc = pthread_cond_init(&(*ppparam)->cond, NULL);
+    if (0 != rc) {
+        free(*ppparam);
+        close((*ppparam)->ctl_pipe_in[0]);
+        close((*ppparam)->ctl_pipe_in[1]);
+        pthread_mutex_destroy(&(*ppparam)->lock);
+    }
+
     return rc;
 }
 
@@ -306,6 +322,9 @@ int app_log_ctrlr_param_free(papp_log_ctlr_param pparam) {
 
     close(pparam->ctl_pipe_out[0]);
     close(pparam->ctl_pipe_out[1]);
+
+    pthread_mutex_destroy(&(pparam)->lock);
+    pthread_cond_destroy(&(pparam)->cond);
 
     free(pparam);
 
@@ -433,6 +452,11 @@ static void* app_log_controller(void *p) {
         }
 
         add_app_deployed_pid(process_pid);
+
+        // notify main thread log controller is ready
+        pthread_mutex_lock(&pparam->lock);
+        pthread_cond_signal(&pparam->cond);
+        pthread_mutex_unlock(&pparam->lock);
 
         paramsQOS1.qos = QOS1;
         paramsQOS1.payload = (void *)payload;
@@ -618,7 +642,7 @@ release:
     return (void *) (intptr_t)rc;
 }
 
-int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client, int launcher_type) {
+int app_deploy(char *app_name, int launcher_type, AWS_IoT_Client *paws_iot_client) {
     papp_log_ctlr_param pparam_log;
     papp_event_ctlr_param pparam_event;
 
@@ -634,6 +658,8 @@ int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client, int launcher_typ
         return rc;
     }
 
+    pthread_mutex_lock(&pparam_log->lock);
+
     rc = pthread_create(&app_log_ctl_thd, NULL, app_log_controller, pparam_log);
     if (0 != rc) {
         IOT_ERROR("failed to create log controller for application %s: %d", app_name, rc);
@@ -642,6 +668,10 @@ int app_deploy(char *app_name, AWS_IoT_Client *paws_iot_client, int launcher_typ
     }
 
     // wait controller ready
+    pthread_cond_wait(&pparam_log->cond, &pparam_log->lock);
+    pthread_mutex_unlock(&pparam_log->lock);
+
+    // wait application startup
     while (0 == app_exists(app_name, launcher_type)) {
         if (cnt++ < 5)
             sleep(1);
