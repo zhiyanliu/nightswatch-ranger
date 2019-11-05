@@ -1,4 +1,32 @@
-This is the repository of the AWS RP IoT device OTA agent running on the device (code name: Night's Watch - Ranger).
+## What is this
+
+This is the code repository of an IoT device [OTA](https://en.wikipedia.org/wiki/Over-the-air_programming) agent running on the AWS IoT Core service managed device, developed by AWS Rapid Prototyping team. The code name of this agent component is [Night's Watch](https://gameofthrones.fandom.com/wiki/Night%27s_Watch) - [Ranger](https://gameofthrones.fandom.com/wiki/Ranger), which is the part of Night's Watch project. 
+
+Mainly, and currently, Night's Watch - Ranger provides three functions:
+
+1. Device certificates OTA.
+2. Agent itself OTA.
+3. Managed application OTA. Support containerized and non-containerized deployment, upgrade and destroy for user-defined application package.
+
+## Why [we](mailto:awscn-sa-prototyping@amazon.com) develop it
+
+AWS IoT Core service provides a set of great features, as the fundamental and necessary mechanism customer can easily build own business logic base on it. However beside the core and basic part, some common and high level paradigm is missing and need to be developed by the customer, again and again, device OTA just is the one which we realized in prototyping daily works.
+
+To prevent our SA and customer to re-develop this kind of OTA agent for AWS IoT Core managed device again, we polished our OTA project to make it as general as possible for common usage, to accelerate the PoC, prototyping case and AWS IoT related service delivery.
+
+>> **Note:**
+>>
+>> This project is truly under continuative develop stage, we'd like to collect the feedback and include the enhancement in follow-up release to share them with all users. 
+>>
+>> **DISCLAIMER: This project is NOT intended for a production environment, and USE AT OWN RISK!**  
+
+## Limit
+
+This project does not work for you if:
+
+* Your device will not manged by AWS IoT Core service.
+* You do not have cross compiling toolchain of the device vendor but want to compile and run this OTA agent on your device.
+* You would not like to involve C lang (and AWS IoT Core embedded C SDK) to your technical stack.
 
 ## How to build
 
@@ -21,7 +49,7 @@ As a C lang project, it needs Build tool and GCC toolchain to compile and link t
   sudo apt install libssl-dev # openssl/md5.h
   ```
 
-- `QuecOpen Linux`: execute follow commands, and read offical document `Quectel_EC2x&AG35-QuecOpen`.
+- `QuecOpen Linux`: execute follow commands, and read official document `Quectel_EC2x&AG35-QuecOpen`.
 
   ```
   tar jxf EC20CEFAGR06A05M4G_OCPU_SDK.tar.bz2
@@ -176,3 +204,14 @@ Kindly reminder, don't forget to give enough read permission to allow current us
 ### python2.7.real: No such file or directory
 
 Same reason as above one. Any `No such file or directory` issue but the file you executed is actually exising, can use ``ldd`` to check if any shared object dependencies of the linked/ELF file are missing.
+
+## Key TODO plan:
+
+- [ ] Explicitly re-subscribe IoT job topics after MQTT client re-connect to the IoT Core service.
+- [ ] Lock MQTT client to prevent MQTT_UNEXPECTED_CLIENT_STATE_ERROR. 
+- [ ] Allow agent startup without Internet.
+
+## Contributor
+
+* Zhi Yan Liu, AWS Rapid Prototyping,  [liuzhiya@amazon.com](mailto:liuzhiya@amazon.com)
+* You. Welcome any feedback and issue report, further more, idea and code contribution are highly encouraged.
