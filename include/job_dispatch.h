@@ -2,8 +2,8 @@
 // Created by Zhi Yan Liu on 2019-05-21.
 //
 
-#ifndef IROOTECH_DMP_RP_AGENT_JOB_DISPATCH_H_
-#define IROOTECH_DMP_RP_AGENT_JOB_DISPATCH_H_
+#ifndef NIGHTSWATCH_RANGER_JOB_DISPATCH_H_
+#define NIGHTSWATCH_RANGER_JOB_DISPATCH_H_
 
 #include <stddef.h>
 
@@ -43,4 +43,4 @@ pjob_dispatcher job_dispatcher_reg_executor(pjob_dispatcher pdispatcher,
 
 int job_dispatcher_dispatch(pjob_dispatch_param pparam, executor_t *pfun);
 
-#endif //IROOTECH_DMP_RP_AGENT_JOB_DISPATCH_H_
+#endif // NIGHTSWATCH_RANGER_JOB_DISPATCH_H_

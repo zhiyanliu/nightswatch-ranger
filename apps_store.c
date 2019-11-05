@@ -36,7 +36,7 @@ papps_store _apps_store_create() {
     apps_path(apps_path_v, PATH_MAX + 1);
 
     snprintf(pstore->apps_store_file_path, PATH_MAX + 1, "%s/%s",
-            apps_path_v, IROOTECH_DMP_RP_AGENT_APP_STORE_FILENAME);
+            apps_path_v, NIGHTSWATCH_RANGER_APPS_STORE_FILENAME);
 
     return pstore;
 }
@@ -172,7 +172,7 @@ end:
 int _apps_store_save(papps_store pstore) {
     int rc = 0, fd, len;
     size_t idx;
-    char tmp_file[PATH_MAX + 1] = "/tmp/irootech-dmp-rp-agent.apps-store.XXXXXX",
+    char tmp_file[PATH_MAX + 1] = "/tmp/nightswatch-ranger.apps-store.XXXXXX",
         record_line[2048], cmd[PATH_MAX * 2 + 20] = {0};
 
     if (NULL == pstore)

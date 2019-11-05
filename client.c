@@ -19,14 +19,14 @@
 
 static void disconnect_callback_handler(AWS_IoT_Client *pclient, void *data);
 
-pdmp_dev_client dmp_dev_client_create() {
-    pdmp_dev_client pclient = (pdmp_dev_client)malloc(sizeof(dmp_dev_client));
+pnw_dev_client nw_dev_client_create() {
+    pnw_dev_client pclient = (pnw_dev_client)malloc(sizeof(nw_dev_client));
     if (NULL != pclient)
-        memset(pclient, 0, sizeof(dmp_dev_client));
+        memset(pclient, 0, sizeof(nw_dev_client));
     return pclient;
 }
 
-IoT_Error_t dmp_dev_client_init(pdmp_dev_client pclient, char *thing_name,
+IoT_Error_t nw_dev_client_init(pnw_dev_client pclient, char *thing_name,
         char *root_ca_file, char *client_ca_file, char *key_file, char *host_url, uint16_t port) {
 
     if (NULL == pclient)
@@ -40,13 +40,13 @@ IoT_Error_t dmp_dev_client_init(pdmp_dev_client pclient, char *thing_name,
     getcwd(pclient->work_dir_path, PATH_MAX + 1);
 
     snprintf(pclient->root_ca_file_path, PATH_MAX + 1, "%s/%s/%s/%s",
-            pclient->work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_CURRENT,
+            pclient->work_dir_path, NIGHTSWATCH_RANGER_CERTS_DIR, NIGHTSWATCH_RANGER_CERTS_PARTITION_CURRENT,
             root_ca_file);
     snprintf(pclient->client_ca_file_path, PATH_MAX + 1, "%s/%s/%s/%s",
-            pclient->work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_CURRENT,
+            pclient->work_dir_path, NIGHTSWATCH_RANGER_CERTS_DIR, NIGHTSWATCH_RANGER_CERTS_PARTITION_CURRENT,
             client_ca_file);
     snprintf(pclient->key_file_path, PATH_MAX + 1, "%s/%s/%s/%s",
-            pclient->work_dir_path, IROOTECH_DMP_RP_AGENT_CERTS_DIR, IROOTECH_DMP_RP_AGENT_CERTS_PARTITION_CURRENT,
+            pclient->work_dir_path, NIGHTSWATCH_RANGER_CERTS_DIR, NIGHTSWATCH_RANGER_CERTS_PARTITION_CURRENT,
             key_file);
 
     IOT_DEBUG("root ca file: %s", pclient->root_ca_file_path);
@@ -76,7 +76,7 @@ IoT_Error_t dmp_dev_client_init(pdmp_dev_client pclient, char *thing_name,
     return aws_iot_mqtt_init(&pclient->c, pclient->mqtt_init_params);
 }
 
-void dmp_dev_client_free(pdmp_dev_client pclient) {
+void nw_dev_client_free(pnw_dev_client pclient) {
     if (NULL == pclient)
         return;
 
@@ -89,7 +89,7 @@ void dmp_dev_client_free(pdmp_dev_client pclient) {
     free(pclient);
 }
 
-IoT_Error_t dmp_dev_client_connect(pdmp_dev_client pclient, char *client_id) {
+IoT_Error_t nw_dev_client_connect(pnw_dev_client pclient, char *client_id) {
     IoT_Error_t rc = FAILURE;
 
     if (NULL == pclient)

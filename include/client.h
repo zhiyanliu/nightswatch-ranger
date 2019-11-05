@@ -2,9 +2,8 @@
 // Created by Zhi Yan Liu on 2019-05-20.
 //
 
-#ifndef IROOTECH_DMP_RP_AGENT_CLIENT_H_
-#define IROOTECH_DMP_RP_AGENT_CLIENT_H_
-
+#ifndef NIGHTSWATCH_RANGER_CLIENT_H_
+#define NIGHTSWATCH_RANGER_CLIENT_H_
 
 #include "aws_iot_error.h"
 #include "aws_iot_mqtt_client.h"
@@ -30,50 +29,50 @@ typedef struct {
     char tpc_sub_upd_accepted[MAX_JOB_TOPIC_LENGTH_BYTES];
     char tpc_sub_upd_rejected[MAX_JOB_TOPIC_LENGTH_BYTES];
     char tpc_pub_get_next[MAX_JOB_TOPIC_LENGTH_BYTES];
-} dmp_dev_client, *pdmp_dev_client;
+} nw_dev_client, *pnw_dev_client;
 
 // lifecycle
 
-pdmp_dev_client dmp_dev_client_create();
+pnw_dev_client nw_dev_client_create();
 
-IoT_Error_t dmp_dev_client_init(pdmp_dev_client client, char *thing_name,
+IoT_Error_t nw_dev_client_init(pnw_dev_client client, char *thing_name,
         char *root_ca_file, char *client_ca_file,
         char *key_file, char *host_url, uint16_t port);
 
-void dmp_dev_client_free(pdmp_dev_client client);
+void nw_dev_client_free(pnw_dev_client client);
 
 // connect
 
-IoT_Error_t dmp_dev_client_connect(pdmp_dev_client client, char *client_id);
+IoT_Error_t nw_dev_client_connect(pnw_dev_client client, char *client_id);
 
 // job subscribe
 
-IoT_Error_t dmp_dev_client_job_listen_next(pdmp_dev_client client, pjob_dispatcher pdispatcher);
+IoT_Error_t nw_dev_client_job_listen_next(pnw_dev_client client, pjob_dispatcher pdispatcher);
 
-IoT_Error_t dmp_dev_client_job_listen_update(pdmp_dev_client client, pjob_dispatcher pdispatcher);
+IoT_Error_t nw_dev_client_job_listen_update(pnw_dev_client client, pjob_dispatcher pdispatcher);
 
-IoT_Error_t dmp_dev_client_job_ask(pdmp_dev_client client);
+IoT_Error_t nw_dev_client_job_ask(pnw_dev_client client);
 
-IoT_Error_t dmp_dev_client_job_loop(pdmp_dev_client client);
+IoT_Error_t nw_dev_client_job_loop(pnw_dev_client client);
 
 // job update
 
-IoT_Error_t dmp_dev_client_job_update(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
+IoT_Error_t nw_dev_client_job_update(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status, const char *job_status_details);
 
-IoT_Error_t dmp_dev_client_job_wip(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
+IoT_Error_t nw_dev_client_job_wip(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status_details);
 
-IoT_Error_t dmp_dev_client_job_reject(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
+IoT_Error_t nw_dev_client_job_reject(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status_details);
 
-IoT_Error_t dmp_dev_client_job_cancel(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
+IoT_Error_t nw_dev_client_job_cancel(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status_details);
 
-IoT_Error_t dmp_dev_client_job_done(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
+IoT_Error_t nw_dev_client_job_done(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status_details);
 
-IoT_Error_t dmp_dev_client_job_failed(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
+IoT_Error_t nw_dev_client_job_failed(AWS_IoT_Client *paws_iot_client, char *thing_name, char *job_id,
         const char *job_status_details);
 
-#endif /* IROOTECH_DMP_RP_AGENT_CLIENT_H_ */
+#endif // NIGHTSWATCH_RANGER_CLIENT_H_

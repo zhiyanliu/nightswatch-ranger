@@ -2,16 +2,15 @@
 // Created by Zhi Yan Liu on 2019/10/13.
 //
 
-#ifndef IROOTECH_DMP_RP_AGENT_APPS_STORE_H_
-#define IROOTECH_DMP_RP_AGENT_APPS_STORE_H_
+#ifndef NIGHTSWATCH_RANGER_APPS_STORE_H_
+#define NIGHTSWATCH_RANGER_APPS_STORE_H_
 
 #include <stddef.h>
 #include <unistd.h>
 
 #include "aws_iot_mqtt_client_interface.h"
 
-
-#define IROOTECH_DMP_RP_AGENT_APP_STORE_FILENAME "registry"
+#define NIGHTSWATCH_RANGER_APPS_STORE_FILENAME "registry"
 
 
 typedef struct {
@@ -55,4 +54,4 @@ int app_register(char *app_name, int launcher_type);
 
 int app_unregister(char *app_name, int launcher_type);
 
-#endif //IROOTECH_DMP_RP_AGENT_APPS_STORE_H_
+#endif // NIGHTSWATCH_RANGER_APPS_STORE_H_

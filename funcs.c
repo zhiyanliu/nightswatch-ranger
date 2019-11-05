@@ -24,8 +24,7 @@ int funcs_path(char *funcs_path_v, size_t funcs_path_l) {
 
     getcwd(work_dir_path, PATH_MAX + 1);
 
-    return snprintf(funcs_path_v, funcs_path_l, "%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_FUNCS_DIR);
+    return snprintf(funcs_path_v, funcs_path_l, "%s/%s", work_dir_path, NIGHTSWATCH_RANGER_FUNCS_DIR);
 }
 
 static pfunc_router prouter = NULL;

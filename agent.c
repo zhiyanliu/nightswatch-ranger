@@ -54,7 +54,7 @@ int agent_cur_par_name(char *par_name, size_t par_name_l) {
     getcwd(work_dir_path, PATH_MAX + 1);
 
     snprintf(link_file_path, PATH_MAX + 1, "%s/%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_HOME_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
+            work_dir_path, NIGHTSWATCH_RANGER_HOME_DIR, NIGHTSWATCH_RANGER_TARGET_CURRENT);
 
     rc = lstat(link_file_path, &buf);
     if (0 != rc)
@@ -77,25 +77,24 @@ int agent_cur_par_name(char *par_name, size_t par_name_l) {
 }
 
 int agent_get_free_par_dir(char *file_path, size_t file_path_l, char *file_name, size_t file_name_l) {
-    char cur_par_name[IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_NAME_LEN + 1],
+    char cur_par_name[NIGHTSWATCH_RANGER_PARTITION_NAME_LEN + 1],
         work_dir_path[PATH_MAX + 1], *par_name = NULL;
     int rc = 0;
 
-    rc = agent_cur_par_name(cur_par_name, IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_NAME_LEN + 1);
+    rc = agent_cur_par_name(cur_par_name, NIGHTSWATCH_RANGER_PARTITION_NAME_LEN + 1);
     if (0 != rc)
         return rc;
 
     getcwd(work_dir_path, PATH_MAX + 1);
 
-    if (0 == strncmp(IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_1, cur_par_name, 2))
-        par_name = IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_2;
-    else if (0 == strncmp(IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_2, cur_par_name, 2))
-        par_name = IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_1;
+    if (0 == strncmp(NIGHTSWATCH_RANGER_PARTITION_1, cur_par_name, 2))
+        par_name = NIGHTSWATCH_RANGER_PARTITION_2;
+    else if (0 == strncmp(NIGHTSWATCH_RANGER_PARTITION_2, cur_par_name, 2))
+        par_name = NIGHTSWATCH_RANGER_PARTITION_1;
     else
         return 1; // link to invalid partition dir
 
-    snprintf(file_path, file_path_l, "%s/%s/%s",
-             work_dir_path, IROOTECH_DMP_RP_AGENT_AGENT_DIR, par_name);
+    snprintf(file_path, file_path_l, "%s/%s/%s", work_dir_path, NIGHTSWATCH_RANGER_BIN_DIR, par_name);
 
     if (NULL != file_name) {
         snprintf(file_name, file_name_l, "%s", par_name);
@@ -116,12 +115,12 @@ int agent_switch_par(char *new_file_path, size_t new_file_path_l, char *new_file
     getcwd(work_dir_path, PATH_MAX + 1);
 
     rc = snprintf(target_file_path, PATH_MAX + 1, "%s/%s/%s",
-            IROOTECH_DMP_RP_AGENT_AGENT_DIR_NAME, target_file_name, IROOTECH_DMP_RP_AGENT_AGENT_FILENAME);
+            NIGHTSWATCH_RANGER_BIN_DIR_NAME, target_file_name, NIGHTSWATCH_RANGER_FILENAME);
     if (0 == rc)
         return 1;
 
     rc = snprintf(link_file_path, PATH_MAX + 1, "%s/%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_HOME_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
+            work_dir_path, NIGHTSWATCH_RANGER_HOME_DIR, NIGHTSWATCH_RANGER_TARGET_CURRENT);
     if (0 == rc)
         return 1;
 
@@ -136,7 +135,7 @@ int agent_switch_par(char *new_file_path, size_t new_file_path_l, char *new_file
 
     if (NULL != new_file_path) {
         snprintf(new_file_path, new_file_path_l, "%s/%s/%s",
-                work_dir_path, IROOTECH_DMP_RP_AGENT_AGENT_DIR, target_file_name);
+                work_dir_path, NIGHTSWATCH_RANGER_BIN_DIR, target_file_name);
     }
 
     if (NULL != new_file_name) {
@@ -147,16 +146,16 @@ int agent_switch_par(char *new_file_path, size_t new_file_path_l, char *new_file
 }
 
 int agent_check_par_link() {
-    char cur_par_name[IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_NAME_LEN + 1];
+    char cur_par_name[NIGHTSWATCH_RANGER_PARTITION_NAME_LEN + 1];
     int rc = 0;
 
-    rc = agent_cur_par_name(cur_par_name, IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_NAME_LEN + 1);
+    rc = agent_cur_par_name(cur_par_name, NIGHTSWATCH_RANGER_PARTITION_NAME_LEN + 1);
     if (0 != rc)
         return rc;
 
-    if (0 == strncmp(IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_1, cur_par_name, 2))
+    if (0 == strncmp(NIGHTSWATCH_RANGER_PARTITION_1, cur_par_name, 2))
         return 0;
-    else if (0 == strncmp(IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_2, cur_par_name, 2))
+    else if (0 == strncmp(NIGHTSWATCH_RANGER_PARTITION_2, cur_par_name, 2))
         return 0;
     return 1;
 }
@@ -166,14 +165,14 @@ int agent_reset_par_link() {
             target_file_path[PATH_MAX + 1], target_file_name[PATH_MAX + 1];
     int rc = 0;
 
-    rc = snprintf(target_file_path, PATH_MAX + 1, "./%s", IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_1);
+    rc = snprintf(target_file_path, PATH_MAX + 1, "./%s", NIGHTSWATCH_RANGER_PARTITION_1);
     if (0 == rc)
         return 1;
 
     getcwd(work_dir_path, PATH_MAX + 1);
 
     rc = snprintf(link_file_path, PATH_MAX + 1, "%s/%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_HOME_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
+            work_dir_path, NIGHTSWATCH_RANGER_HOME_DIR, NIGHTSWATCH_RANGER_TARGET_CURRENT);
     if (0 == rc)
         return 1;
 
@@ -190,8 +189,8 @@ int agent_reset_par_link() {
 }
 
 int agent_par_name_valid(char *par_name) {
-    if (0 == strncmp(IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_1, par_name, 2))
+    if (0 == strncmp(NIGHTSWATCH_RANGER_PARTITION_1, par_name, 2))
         return 1;
 
-    return !strncmp(IROOTECH_DMP_RP_AGENT_AGENT_PARTITION_2, par_name, 2);
+    return !strncmp(NIGHTSWATCH_RANGER_PARTITION_2, par_name, 2);
 }

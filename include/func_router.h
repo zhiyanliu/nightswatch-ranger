@@ -2,8 +2,8 @@
 // Created by Zhi Yan Liu on 2019-07-03.
 //
 
-#ifndef IROOTECH_DMP_RP_AGENT_FUNC_ROUTER_H_
-#define IROOTECH_DMP_RP_AGENT_FUNC_ROUTER_H_
+#ifndef NIGHTSWATCH_RANGER_FUNC_ROUTER_H_
+#define NIGHTSWATCH_RANGER_APPS_H_
 
 #include <stddef.h>
 #include <unistd.h>
@@ -11,8 +11,8 @@
 #include "aws_iot_mqtt_client_interface.h"
 
 
-#define IROOTECH_DMP_RP_AGENT_FUNC_ROUTER_HOME_DIR "router"
-#define IROOTECH_DMP_RP_AGENT_FUNC_ROUTER_IO_SOCK_PORT 9000
+#define NIGHTSWATCH_RANGER_FUNC_ROUTER_HOME_DIR_NAME "router"
+#define NIGHTSWATCH_RANGER_FUNC_ROUTER_IO_SOCK_PORT 9000
 
 
 typedef struct {
@@ -37,4 +37,4 @@ int func_router_start(pfunc_router prouter);
 
 int func_router_stop(pfunc_router prouter);
 
-#endif // IROOTECH_DMP_RP_AGENT_FUNC_ROUTER_H_
+#endif // NIGHTSWATCH_RANGER_APPS_H_

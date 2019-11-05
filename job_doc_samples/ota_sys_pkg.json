@@ -1,4 +1,4 @@
 {
   "operate": "ota_sys_pkg",
-  "pkg_url": "${aws:iot:s3-presigned-url:https://s3.amazonaws.com/liuzhiyan-irootech-dmp-rp/ota_sys_pkg.zip}"
+  "pkg_url": "${aws:iot:s3-presigned-url:https://s3.amazonaws.com/liuzhiyan-nightswatch/ota_sys_pkg.zip}"
 }

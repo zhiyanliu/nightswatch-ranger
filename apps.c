@@ -66,7 +66,7 @@ int apps_path(char *apps_path_v, size_t apps_path_v_l) {
     getcwd(work_dir_path, PATH_MAX + 1);
 
     return snprintf(apps_path_v, apps_path_v_l, "%s/%s",
-             work_dir_path, IROOTECH_DMP_RP_AGENT_APPS_DIR);
+             work_dir_path, NIGHTSWATCH_RANGER_APPS_DIR);
 }
 
 int app_home_path(char *app_home_path_v, size_t app_home_path_l, char *app_name) {
@@ -99,7 +99,7 @@ int app_root_path(char *app_root_path_v, size_t app_root_path_l, char *app_name)
     if (-1 == len0)
         return -1;
 
-    len1 = snprintf(app_root_path_v + len0, app_root_path_l - len0, "/%s", IROOTECH_DMP_RP_AGENT_APP_ROOT_DIR);
+    len1 = snprintf(app_root_path_v + len0, app_root_path_l - len0, "/%s", NIGHTSWATCH_RANGER_APP_ROOT_DIR_NAME);
     if (-1 == len1)
         return -1;
 
@@ -116,12 +116,12 @@ int app_spec_tpl_path(char *app_spec_tpl_path_v, size_t app_spec_tpl_path_l, int
     if (-1 == len0)
         return -1;
 
-    if (launcher_type == IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUNC)
+    if (launcher_type == NIGHTSWATCH_RANGER_APP_LAUNCHER_TYPE_RUNC)
         len1 = snprintf(app_spec_tpl_path_v + len0, app_spec_tpl_path_l - len0, "/%s.runc.tpl",
-                        IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE);
-    else if (launcher_type == IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUND)
+                        NIGHTSWATCH_RANGER_APP_SPEC_FILENAME);
+    else if (launcher_type == NIGHTSWATCH_RANGER_APP_LAUNCHER_TYPE_RUND)
         len1 = snprintf(app_spec_tpl_path_v + len0, app_spec_tpl_path_l - len0, "/%s.rund.tpl",
-                        IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE);
+                        NIGHTSWATCH_RANGER_APP_SPEC_FILENAME);
     else
         return -1;
 
@@ -141,7 +141,7 @@ int app_spec_path(char *app_spec_path_v, size_t app_spec_path_l, char *app_name)
     if (-1 == len0)
         return -1;
 
-    len1 = snprintf(app_spec_path_v + len0, app_spec_path_l - len0, "/%s", IROOTECH_DMP_RP_AGENT_APP_SPEC_FILE);
+    len1 = snprintf(app_spec_path_v + len0, app_spec_path_l - len0, "/%s", NIGHTSWATCH_RANGER_APP_SPEC_FILENAME);
     if (-1 == len1)
         return -1;
 
@@ -158,12 +158,12 @@ int app_launcher_path(char *app_launch_path_v, size_t app_launch_path_l, int lau
     if (-1 == len0)
         return -1;
 
-    if (launcher_type == IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUNC)
+    if (launcher_type == NIGHTSWATCH_RANGER_APP_LAUNCHER_TYPE_RUNC)
         len1 = snprintf(app_launch_path_v + len0, app_launch_path_l - len0, "/%s",
-                IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_NAME_RUNC);
-    else if (launcher_type == IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUND)
+                NIGHTSWATCH_RANGER_APP_LAUNCHER_NAME_RUNC);
+    else if (launcher_type == NIGHTSWATCH_RANGER_APP_LAUNCHER_TYPE_RUND)
         len1 = snprintf(app_launch_path_v + len0, app_launch_path_l - len0, "/%s",
-                IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_NAME_RUND);
+                NIGHTSWATCH_RANGER_APP_LAUNCHER_NAME_RUND);
     else
         return -1;
 
@@ -185,7 +185,7 @@ int app_process_pid_path(char *process_pid_path_v, size_t process_pid_path_l, ch
         return -1;
 
     len1 = snprintf(process_pid_path_v + len0, process_pid_path_l - len0, "/%s",
-            IROOTECH_DMP_RP_AGENT_APP_PROCESS_PID_FILE);
+            NIGHTSWATCH_RANGER_APP_PROCESS_PID_FILENAME);
     if (-1 == len1)
         return -1;
 
@@ -462,7 +462,7 @@ static void* app_log_controller(void *p) {
         paramsQOS1.payload = (void *)payload;
         paramsQOS1.isRetained = 0;
 
-        topic_l = snprintf(topic, PATH_MAX + 50, "dmp/apps/%s/log", pparam->app_name);
+        topic_l = snprintf(topic, PATH_MAX + 50, "nw/apps/%s/log", pparam->app_name);
 
         while (1) {
             FD_ZERO(&fds);
@@ -575,7 +575,7 @@ static void* app_event_controller(void *p) {
         paramsQOS1.payload = (void *)payload;
         paramsQOS1.isRetained = 0;
 
-        topic_l = snprintf(topic, PATH_MAX + 50, "dmp/apps/%s/event", pparam->app_name);
+        topic_l = snprintf(topic, PATH_MAX + 50, "nw/apps/%s/event", pparam->app_name);
 
         close(fd[1]);
 
@@ -715,7 +715,7 @@ int app_destroy(char *app_name, int launcher_type) {
     getcwd(work_dir_path, PATH_MAX + 1);
 
     snprintf(app_home_path, PATH_MAX + 1, "%s/%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_APPS_DIR, app_name);
+            work_dir_path, NIGHTSWATCH_RANGER_APPS_DIR, app_name);
 
     snprintf(cmd, PATH_MAX + 10, "rm -rf %s", app_home_path);
 

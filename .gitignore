@@ -1,6 +1,6 @@
-agent
-dmpagent
-dmprund
+ranger
+nightswatch-ranger
+nightswatch-rund
 aws-iot-device-sdk-embedded-C
 
 *.o

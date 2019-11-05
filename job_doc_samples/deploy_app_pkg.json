@@ -1,7 +1,7 @@
 {
   "operate": "deploy_app_pkg",
   "app_name": "app_xxx",
-  "pkg_url": "${aws:iot:s3-presigned-url:https://s3.amazonaws.com/liuzhiyan-irootech-dmp-rp/app_xxx_pkg.tar.gz}",
+  "pkg_url": "${aws:iot:s3-presigned-url:https://s3.amazonaws.com/liuzhiyan-nightswatch/app_xxx_pkg.tar.gz}",
   "pkg_md5": "8b4c378f57a63b1bbf341ec9dc5c78b4",
   "app_args": "sh",
   "force": false,

@@ -33,7 +33,8 @@ int main(int argc, char **argv) {
         return rc;
     }
 
-    // ['rund', 'run', '--bundle', '/dmp/apps/app_name', '--pid-file', '/dmp/apps/app_name/pid', 'app_name']
+    // ['rund', 'run', '--bundle', '/nightswatch/apps/app_name',
+    //  '--pid-file', '/nightswatch/apps/app_name/pid', 'app_name']
     if (7 == argc && 0 == strncmp(argv[1], "run", 4) &&
             0 == strncmp(argv[2], "--bundle", 9) &&
             0 == strncmp(argv[4], "--pid-file", 11))

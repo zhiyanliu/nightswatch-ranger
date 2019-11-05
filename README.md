@@ -1,4 +1,4 @@
-This is the repository of the AWS RP project for iRootech DMP agent running in the device.
+This is the repository of the AWS RP IoT device OTA agent running on the device (code name: Night's Watch - Ranger).
 
 ## How to build
 
@@ -52,10 +52,10 @@ As a C lang project, it needs Build tool and GCC toolchain to compile and link t
 
 ### Basic
 
-1. `git clone ssh://git-codecommit.ap-northeast-1.amazonaws.com/v1/repos/irootech-dmp-rp-agent`
-2. `cd irootech-dmp-rp-agent`
+1. ``git clone git@git.awsrun.com:rp/nightswatch-ranger.git``
+2. ``cd nightswatch-ranger``
 3. ``source <QuecOpen Linux SDK>/ql-ol-crosstool/ql-ol-crosstool-env-init``, do this for cross compiling for QuecOpen Linux platform only, and execute this for each new session, environment varibables are exported and dedicated.
-4. ``make``, `dmpagent` and `dmprund` binaries are built out to current directory if build process is executed successfully.
+4. ``make``, `nightswatch-ranger` and `nightswatch-rund` binaries are built out to current directory if build process is executed successfully.
 5. ``make install``, Install compiled binaries to their running directory.
 
 ### Advanced
@@ -64,24 +64,24 @@ Build supports follow 7 targets currently, e.g. you can execute `make libawsiot.
 
 1. `aws-iot-device-sdk-embedded-C` Get AWS IoT SDK vendor package.
 2. `libawsiot.a` Compile AWS IoT SDK static library.
-3. `dmpagent` Compile and link DMP agent binary.
-4. `dmprund` Compile and link DMP application launcher binary.
-5. `all` Currently it does `dmpagent` and `dmprund` targets. Default target.
-6. `install` Install the agent and the launcher binaries to bin directory with dual partitions structure of agent OTA and apps directory .
+3. `nightswatch-ranger` Compile and link Night's Watch Ranger binary.
+4. `nightswatch-rund` Compile and link Night's Watch application launcher binary.
+5. `all` Currently it does `nightswatch-ranger` and `nightswatch-rund` targets. Default target.
+6. `install` Install Ranger and the launcher binaries to bin directory with dual partitions structure of certificate OTA, Ranger OTA and apps directory.
 7. `vendor_clean` Remove local AWS IoT SDK vendor package and compiled static library.
-8. `clean` Remove all output files of last build, prepare for next complete and clean DMP agent build.
+8. `clean` Remove all output files of last build, prepare for next complete and clean Night's Watch Ranger build.
 
 >>**Note:**
 >>
->> libawsiot.a static library works for current project and client only due to it contains your special configuration e.g. IoT MQTT server address and port, client id for the device. So don't copy this file to other embedded C project or your different device. From engineering perspective, this libraray is used to separate common AWS IoT SDK from the DMP agent business logic as an upstream vendor package, as the result, you can do `make aws-iot-device-sdk-embedded-C` to get vendor code outside this DMP agent project repository and keep it up-to-date.
+>> libawsiot.a static library works for current project and client only due to it contains your special configuration e.g. IoT MQTT server address and port, client id for the device. So don't copy this file to other embedded C project or your different device. From engineering perspective, this library is used to separate common AWS IoT SDK from the OTA agent business logic as an upstream vendor package, as the result, you can do `make aws-iot-device-sdk-embedded-C` to get vendor code outside this OTA agent project repository and keep it up-to-date.
 >>
->> In future, you can extract and parameterize these configurations out of the libraray, however it means you need to change AWS IoT SDK code or enhance Build logic.
+>> In future, you can extract and parameterize these configurations out of the library, however it means you need to change AWS IoT SDK code or enhance Build logic.
 
 ### Deployment directory structure
 
 ```
-<DMP_AGENT_HOME_DIR>
-├── [lrwxrwxrwx]  agent -> bin/p1/dmpagent
+<NIGHTS_WATCH_RANGER_HOME_DIR>
+├── [lrwxrwxrwx]  ranger -> bin/p1/nightswatch-ranger
 ├── [drwxr-xr-x]  apps
 │   ├── [-rw-rw-r--]  config.json.runc.tpl
 │   ├── [-rw-rw-r--]  config.json.rund.tpl
@@ -89,7 +89,7 @@ Build supports follow 7 targets currently, e.g. you can execute `make libawsiot.
 │   └── [-rwxr-xr-x]  rund
 ├── [drwxr-xr-x]  bin
 │   ├── [drwxr-xr-x]  p1
-│   │   └── [-rwxr-xr-x]  dmpagent
+│   │   └── [-rwxr-xr-x]  nightswatch-ranger
 │   └── [drwxrwxr-x]  p2
 ├── [drwxr-xr-x]  certs
 │   ├── [lrwxrwxrwx]  latest -> ./p1
@@ -105,7 +105,7 @@ Build supports follow 7 targets currently, e.g. you can execute `make libawsiot.
 
 ## How to config
 
-Overall you need to config DMP device agent from below two sides:
+Overall you need to config Night's Watch Ranger from below two sides:
 
 1. Setup customer specific device client parameter configuration.
 2. Place certificate, public and private key files to project home directory.
@@ -149,9 +149,9 @@ export https_proxy=$http_proxy
 ```
 ### Dependencies
 
-- `unzip`: If you need DMP agent supports Certificate and Agent OTA opertion. Install it on Ubuntu by ``apt-get install unzip``.
-- `tar`: If you need DMP agent supports Application Deployment operation.
-- `runc`: If you need DMP agent supports Application Deployment operation with container mode. Refer RUNC at [here](https://github.com/opencontainers/runc).
+- `unzip`: If you need Night's Watch Ranger supports Certificate and Agent OTA operation. Install it on Ubuntu by ``apt-get install unzip``.
+- `tar`: If you need Night's Watch Ranger supports Application Deployment operation.
+- `runc`: If you need Night's Watch Ranger supports Application Deployment operation with container mode. Refer RUNC at [here](https://github.com/opencontainers/runc).
 
 ## Troubleshooting
 

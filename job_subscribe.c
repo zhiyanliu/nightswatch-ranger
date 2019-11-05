@@ -18,7 +18,7 @@
 
 
 typedef struct {
-    pdmp_dev_client pclient;
+    pnw_dev_client pclient;
     pjob_dispatcher pdispatcher;
 }job_callback_param, *pjob_callback_param;
 
@@ -31,7 +31,7 @@ static void update_accepted_callback_handler(AWS_IoT_Client *client, char *topic
 static void update_rejected_callback_handler(AWS_IoT_Client *client, char *topic_name, uint16_t topic_name_l,
                                              IoT_Publish_Message_Params *params, void *data);
 
-IoT_Error_t dmp_dev_client_job_listen_next(pdmp_dev_client pclient, pjob_dispatcher pdispatcher) {
+IoT_Error_t nw_dev_client_job_listen_next(pnw_dev_client pclient, pjob_dispatcher pdispatcher) {
     IoT_Error_t rc = FAILURE;
     pjob_callback_param pparam = NULL;
 
@@ -67,7 +67,7 @@ IoT_Error_t dmp_dev_client_job_listen_next(pdmp_dev_client pclient, pjob_dispatc
     return rc;
 }
 
-IoT_Error_t dmp_dev_client_job_listen_update(pdmp_dev_client pclient, pjob_dispatcher pdispatcher) {
+IoT_Error_t nw_dev_client_job_listen_update(pnw_dev_client pclient, pjob_dispatcher pdispatcher) {
     IoT_Error_t rc = FAILURE;
     pjob_callback_param pparam = NULL;
 
@@ -103,7 +103,7 @@ IoT_Error_t dmp_dev_client_job_listen_update(pdmp_dev_client pclient, pjob_dispa
     return rc;
 }
 
-IoT_Error_t dmp_dev_client_job_ask(pdmp_dev_client pclient) {
+IoT_Error_t nw_dev_client_job_ask(pnw_dev_client pclient) {
     IoT_Error_t rc = FAILURE;
 
     AwsIotDescribeJobExecutionRequest desc_req;
@@ -122,7 +122,7 @@ IoT_Error_t dmp_dev_client_job_ask(pdmp_dev_client pclient) {
     return rc;
 }
 
-IoT_Error_t dmp_dev_client_job_loop(pdmp_dev_client pclient) {
+IoT_Error_t nw_dev_client_job_loop(pnw_dev_client pclient) {
     IoT_Error_t rc = FAILURE;
 
     if (NULL == pclient)
@@ -163,7 +163,7 @@ static void next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint1
     }
 
     if (NULL == pparam->pclient) {
-        IOT_ERROR("[BUG] invalid context, dmp device client not found");
+        IOT_ERROR("[BUG] invalid context, the device client not found");
         return;
     }
 
@@ -215,10 +215,10 @@ static void next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint1
         }
 
         if (NULL != job_status) {
-            rc = dmp_dev_client_job_update(&pparam->pclient->c, pparam->pclient->thing_name,
+            rc = nw_dev_client_job_update(&pparam->pclient->c, pparam->pclient->thing_name,
                     pj->job_id, job_status, job_status_details);
             if (SUCCESS != rc)
-                IOT_ERROR("dmp_dev_client_job_update returned error: %d", rc);
+                IOT_ERROR("nw_dev_client_job_update returned error: %d", rc);
         }
     } else {
         int dispatch_rc = 0, execute_rc = 0;
@@ -238,23 +238,23 @@ static void next_job_callback_handler(AWS_IoT_Client *c, char *topic_name, uint1
             case 1: // invalid input
                 IOT_ERROR("[BUG] invalid input for dispatch");
 
-                dmp_dev_client_job_cancel(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
+                nw_dev_client_job_cancel(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
                         "{\"detail\":\"Job is cancelled due to device client bug.\"}");
                 break;
             case 2: // nothing to do
                 IOT_WARN("job operate property not found, reject");
 
-                dmp_dev_client_job_reject(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
+                nw_dev_client_job_reject(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
                         "{\"failureDetail\":\"Job operate property not found.\"}");
                 break;
             case 3: // executor not found, unsupported operate
                 IOT_ERROR("unsupported job operator for this device client, reject");
 
-                dmp_dev_client_job_reject(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
+                nw_dev_client_job_reject(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
                         "{\"failureDetail\":\"Job operate not support for this device client.\"}");
                 break;
             case 0:
-                dmp_dev_client_job_wip(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
+                nw_dev_client_job_wip(&pparam->pclient->c, pparam->pclient->thing_name, pj->job_id,
                         "{\"detail\":\"Job is accepted and start to execute.\"}");
 
                 // execute job

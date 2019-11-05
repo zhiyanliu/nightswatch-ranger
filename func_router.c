@@ -37,7 +37,7 @@ int func_router_home_path(char *func_router_home_path_v, size_t func_router_home
         return -1;
 
     len1 = snprintf(func_router_home_path_v + len0, func_router_home_path_l - len0, "/%s",
-        IROOTECH_DMP_RP_AGENT_FUNC_ROUTER_HOME_DIR);
+            NIGHTSWATCH_RANGER_FUNC_ROUTER_HOME_DIR_NAME);
     if (-1 == len1)
         return -1;
 
@@ -60,7 +60,7 @@ static int func_router_io_sock() {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    addr.sin_port = htons(IROOTECH_DMP_RP_AGENT_FUNC_ROUTER_IO_SOCK_PORT);
+    addr.sin_port = htons(NIGHTSWATCH_RANGER_FUNC_ROUTER_IO_SOCK_PORT);
 
     rc = bind(fd, (struct sockaddr*)&addr, sizeof(addr));
     if (-1 == rc) {
@@ -76,7 +76,7 @@ static int func_router_io_sock() {
         return -1;
     }
 
-    IOT_INFO("the function router socket created, at 127.0.0.1:%d", IROOTECH_DMP_RP_AGENT_FUNC_ROUTER_IO_SOCK_PORT);
+    IOT_INFO("the function router socket created, at 127.0.0.1:%d", NIGHTSWATCH_RANGER_FUNC_ROUTER_IO_SOCK_PORT);
 
     return fd;
 }

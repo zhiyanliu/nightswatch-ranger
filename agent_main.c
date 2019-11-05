@@ -92,12 +92,12 @@ int to_ota_agent_pkg(int argc, char **argv, char **ota_agent_pkg_job_id, char **
     return 1;
 }
 
-IoT_Error_t _client_connect(pdmp_dev_client *ppclient) {
+IoT_Error_t _client_connect(pnw_dev_client *ppclient) {
     char cur_par_name[PATH_MAX + 1];
     IoT_Error_t iot_rc = FAILURE;
     int rc = 0;
 
-    *ppclient = dmp_dev_client_create();
+    *ppclient = nw_dev_client_create();
     if (NULL == *ppclient) {
         IOT_ERROR("failed to allocate client");
         return FAILURE;
@@ -109,26 +109,26 @@ IoT_Error_t _client_connect(pdmp_dev_client *ppclient) {
 
     IOT_INFO("current certs partition: %s", cur_par_name);
 
-    iot_rc = dmp_dev_client_init(*ppclient, AWS_IOT_MY_THING_NAME,
+    iot_rc = nw_dev_client_init(*ppclient, AWS_IOT_MY_THING_NAME,
             AWS_IOT_ROOT_CA_FILENAME, AWS_IOT_CERTIFICATE_FILENAME,
             AWS_IOT_PRIVATE_KEY_FILENAME, AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
     if (SUCCESS != iot_rc) {
         IOT_ERROR("failed to init client: %d", iot_rc);
-        dmp_dev_client_free(*ppclient);
+        nw_dev_client_free(*ppclient);
         return iot_rc;
     }
 
-    iot_rc = dmp_dev_client_connect(*ppclient, AWS_IOT_MQTT_CLIENT_ID);
+    iot_rc = nw_dev_client_connect(*ppclient, AWS_IOT_MQTT_CLIENT_ID);
     if (SUCCESS != iot_rc) {
         IOT_ERROR("failed to connect to AWS IoT Core: %d", iot_rc);
-        dmp_dev_client_free(*ppclient);
+        nw_dev_client_free(*ppclient);
         return iot_rc;
     }
 
     return iot_rc;
 }
 
-client_connect_ret client_connect(pdmp_dev_client *ppclient, IoT_Error_t *iot_rc, int upd_dev_ca) {
+client_connect_ret client_connect(pnw_dev_client *ppclient, IoT_Error_t *iot_rc, int upd_dev_ca) {
     int rc = 0;
 
     IOT_DEBUG("connecting to AWS IoT Core: %s:%d", AWS_IOT_MQTT_HOST, AWS_IOT_MQTT_PORT);
@@ -171,13 +171,13 @@ client_connect_ret client_connect(pdmp_dev_client *ppclient, IoT_Error_t *iot_rc
     return CERTS_FALLBACK_CONN_SUCCESS;
 }
 
-IoT_Error_t subscribe(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id, int upd_dev_ca_works) {
+IoT_Error_t subscribe(pnw_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_job_id, int upd_dev_ca_works) {
     IoT_Error_t rc = FAILURE;
     pjob_dispatcher pdispatcher = job_dispatcher_bootstrap();
 
     IOT_DEBUG("subscribe job topics")
 
-    rc = dmp_dev_client_job_listen_update(pclient, pdispatcher);
+    rc = nw_dev_client_job_listen_update(pclient, pdispatcher);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to subscribe job status update topics: %d", rc);
         return rc;
@@ -190,7 +190,7 @@ IoT_Error_t subscribe(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_
         }
 
         if (upd_dev_ca_works) {
-            rc = dmp_dev_client_job_done(&pclient->c, pclient->thing_name, upd_dev_ca_job_id,
+            rc = nw_dev_client_job_done(&pclient->c, pclient->thing_name, upd_dev_ca_job_id,
                     "{\"detail\":\"Device connected to the client using new certs.\"}");
             if (SUCCESS != rc) {
                 IOT_ERROR("failed to set update device certs job status to SUCCEEDED, "
@@ -199,7 +199,7 @@ IoT_Error_t subscribe(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_
                 IOT_INFO("update certs successfully, job id: %s", upd_dev_ca_job_id);
             }
         } else {
-            rc = dmp_dev_client_job_failed(&pclient->c, pclient->thing_name, upd_dev_ca_job_id,
+            rc = nw_dev_client_job_failed(&pclient->c, pclient->thing_name, upd_dev_ca_job_id,
                     "{\"detail\":\"Device connected to the client using old certs.\"}");
             if (SUCCESS != rc) {
                 IOT_ERROR("failed to update update device certs job status to FAILED, "
@@ -210,7 +210,7 @@ IoT_Error_t subscribe(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_
         }
     }
 
-    rc = dmp_dev_client_job_listen_next(pclient, pdispatcher);
+    rc = nw_dev_client_job_listen_next(pclient, pdispatcher);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to subscribe job next topics: %d", rc);
         return rc;
@@ -219,13 +219,13 @@ IoT_Error_t subscribe(pdmp_dev_client pclient, int upd_dev_ca, char *upd_dev_ca_
     return rc;
 }
 
-IoT_Error_t run(pdmp_dev_client pclient) {
+IoT_Error_t run(pnw_dev_client pclient) {
     IoT_Error_t rc = FAILURE;
 
     IOT_DEBUG("ask job to process")
 
     do {
-        rc = dmp_dev_client_job_ask(pclient);
+        rc = nw_dev_client_job_ask(pclient);
         if (MQTT_CLIENT_NOT_IDLE_ERROR == rc)
             usleep(100); // faster timeout than yield() in main thread loop
     } while (MQTT_CLIENT_NOT_IDLE_ERROR == rc);
@@ -237,7 +237,7 @@ IoT_Error_t run(pdmp_dev_client pclient) {
 
     IOT_DEBUG("start mqtt message handling loop")
 
-    rc = dmp_dev_client_job_loop(pclient);
+    rc = nw_dev_client_job_loop(pclient);
     if (SUCCESS != rc) {
         IOT_ERROR("failed to start mqtt message handling loop: %d", rc);
     }
@@ -254,7 +254,7 @@ void sig_handler(int signo)
 }
 
 int main(int argc, char **argv) {
-    pdmp_dev_client pclient = NULL;
+    pnw_dev_client pclient = NULL;
     client_connect_ret conn_ret = CONN_FAILED;
     IoT_Error_t iot_rc = FAILURE;
     int rc = 0, upd_dev_ca = 0, upd_dev_ca_works = 1, ota_agent_pkg = 0;
@@ -318,11 +318,11 @@ int main(int argc, char **argv) {
 
     ota_agent_pkg = to_ota_agent_pkg(argc, argv, &ota_agent_pkg_job_id, &ota_agent_ver);
     if (ota_agent_pkg) {
-        // suppose "agent_ver" property in job document equals IROOTECH_DMP_RP_AGENT_VER in program, maybe need a check
+        // suppose "agent_ver" property in job document equals NIGHTSWATCH_RANGER_VER in program, maybe need a check
         IOT_DEBUG("application continues to apply new agent, version: %s, job id: %s",
                 ota_agent_ver, ota_agent_pkg_job_id);
 
-        rc = dmp_dev_client_job_done(&pclient->c, pclient->thing_name, ota_agent_pkg_job_id,
+        rc = nw_dev_client_job_done(&pclient->c, pclient->thing_name, ota_agent_pkg_job_id,
                 "{\"detail\":\"Device connected to the client using new agent.\"}");
 
         IOT_INFO("update agent to version %s successfully, job id: %s", ota_agent_ver, ota_agent_pkg_job_id);
@@ -363,7 +363,7 @@ int main(int argc, char **argv) {
     s3_http_free();
 
 release:
-    dmp_dev_client_free(pclient);
+    nw_dev_client_free(pclient);
 
     return iot_rc;
 }

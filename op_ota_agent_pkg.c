@@ -205,7 +205,7 @@ static int step5_restart_agent(pjob_dispatch_param pparam, char *alter_par_name,
     getcwd(work_dir_path, PATH_MAX + 1);
 
     snprintf(agent_path, PATH_MAX + 1, "%s/%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_HOME_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
+            work_dir_path, NIGHTSWATCH_RANGER_HOME_DIR, NIGHTSWATCH_RANGER_TARGET_CURRENT);
 
     IOT_INFO("restarting the agent, switch to using new version");
 
@@ -220,67 +220,67 @@ static int step5_restart_agent(pjob_dispatch_param pparam, char *alter_par_name,
 
 int op_ota_agent_pkg_entry(pjob_dispatch_param pparam) {
     char alter_par_path[PATH_MAX + 1], alter_par_name[PATH_MAX + 1],
-            alter_agent_pkg_file_path[PATH_MAX + 1], agent_ver[IROOTECH_DMP_RP_AGENT_AGENT_VERSION_LEN], pkg_url[4096];
+            alter_agent_pkg_file_path[PATH_MAX + 1], agent_ver[NIGHTSWATCH_RANGER_VERSION_LEN], pkg_url[4096];
     unsigned char pkg_md5_src[MD5_SUM_LENGTH + 1], pkg_md5_dst[MD5_SUM_LENGTH + 1];
     int rc = 0;
 
     rc = parse_job_doc(pparam->pj, pkg_url, 4096, pkg_md5_dst, MD5_SUM_LENGTH + 1,
-            agent_ver, IROOTECH_DMP_RP_AGENT_AGENT_VERSION_LEN);
+            agent_ver, NIGHTSWATCH_RANGER_VERSION_LEN);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to parse agent update job document.\"}");
         return rc;
     }
 
-    rc = strcmp(agent_ver, IROOTECH_DMP_RP_AGENT_VER);
+    rc = strcmp(agent_ver, NIGHTSWATCH_RANGER_VER);
     if (0 == rc) { // powered off during restart in last update operate? or wrong device target for the job
         IOT_WARN("device is already using new agent version %s, skip update and set job to success directly",
                 agent_ver);
-        dmp_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Device connected to the client using new agent.\"}");
         return rc;
     }
 
     // TODO(production): check free disk space, reject the operate if needed.
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Downloading new agent package to update.\"}");
 
     rc = step1_download_pkg_file(pparam, alter_par_path, PATH_MAX + 1, alter_agent_pkg_file_path, PATH_MAX + 1,
             pkg_url, pkg_md5_dst, agent_ver);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to downloading new agent package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Verifying the md5 of new agent package.\"}");
 
     rc = step2_verify_pkg_md5sum(pparam, alter_agent_pkg_file_path, PATH_MAX + 1,
             pkg_md5_src, pkg_md5_dst, MD5_SUM_LENGTH + 1);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to verify the md5 of new agent package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Extracting new agent package.\"}");
 
     rc = step3_unzip_pkg_file(pparam, alter_par_path, alter_agent_pkg_file_path);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to extract new agent package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Configure device to use new agent.\"}");
 
     rc = step4_switch_agent_par(pparam, alter_par_name, PATH_MAX + 1);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to switch to using new agent.\"}");
         return rc;
     }
@@ -295,12 +295,12 @@ int op_ota_agent_pkg_entry(pjob_dispatch_param pparam) {
 
     // TODO(production): close other resources, e.g. opened fd.
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Restarting device agent to apply new version.\"}");
 
     rc = step5_restart_agent(pparam, alter_par_name, agent_ver);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to restart the agent.\"}");
         return rc;
     }

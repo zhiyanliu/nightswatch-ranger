@@ -149,9 +149,9 @@ static int step1_check_app_deployed(pjob_dispatch_param pparam, char *app_name, 
 
     if (use_container)
         // using runc by default
-        *launcher_type = IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUNC;
+        *launcher_type = NIGHTSWATCH_RANGER_APP_LAUNCHER_TYPE_RUNC;
     else
-        *launcher_type = IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUND;
+        *launcher_type = NIGHTSWATCH_RANGER_APP_LAUNCHER_TYPE_RUND;
 
     rc = app_exists(app_name, *launcher_type);
     if (1 == rc) {
@@ -326,12 +326,12 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
     rc = step1_check_app_deployed(pparam, app_name, PATH_MAX + 1, pkg_url, 4096,
             pkg_md5_dst, MD5_SUM_LENGTH + 1, app_args, PATH_MAX + 1, &launcher_type);
     if (1000 == rc) {  // force deploy
-        dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Destroying existing application process to force deploy.\"}");
 
         rc = app_destroy(app_name, launcher_type);
         if (0 != rc) {
-            dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+            nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                     "{\"detail\":\"Failed to destroy existing application process.\"}");
             return rc;
         }
@@ -345,63 +345,63 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
                     app_name, launcher_type);
         }
     } else if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Application was deployed on this device already.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Downloading application package to the device.\"}");
 
     rc = step2_download_pkg_file(pparam, pkg_url, pkg_md5_dst, app_name,
             app_home_path, PATH_MAX + 1, app_pkg_file_path, PATH_MAX + 1);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to downloading application package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Verifying the md5 of application package.\"}");
 
     rc = step3_verify_pkg_md5sum(pparam, app_pkg_file_path, PATH_MAX + 1,
             pkg_md5_src, pkg_md5_dst, MD5_SUM_LENGTH + 1);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to verify the md5 of application package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Extracting application package.\"}");
 
-    snprintf(app_root_path, PATH_MAX + 1, "%s/%s", app_home_path, IROOTECH_DMP_RP_AGENT_APP_ROOT_DIR);
+    snprintf(app_root_path, PATH_MAX + 1, "%s/%s", app_home_path, NIGHTSWATCH_RANGER_APP_ROOT_DIR_NAME);
 
     rc = step4_extract_pkg_file(pparam, app_root_path, app_pkg_file_path);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to extract application package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Configure the process spec of application.\"}");
 
     rc = step5_config_launcher_spec(pparam, app_name, app_args, app_spec_path, PATH_MAX + 1, launcher_type);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to configure the process spec of application.\"}");
         return rc;
     }
 
     // TODO(production): book the locally deployed application info at somewhere.
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Deploying application process.\"}");
 
     rc = app_deploy(app_name, launcher_type, pparam->paws_iot_client);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to deploy application process.\"}");
         return rc;
     }
@@ -414,7 +414,7 @@ int op_deploy_app_pkg_entry(pjob_dispatch_param pparam) {
         IOT_DEBUG("application %s (launcher-type=%d) is registered to local store", app_name, launcher_type);
     }
 
-    rc = dmp_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    rc = nw_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Application deployed.\"}");
     if (SUCCESS != rc) {
         IOT_ERROR("failed to set application deploy job status to SUCCEEDED, "

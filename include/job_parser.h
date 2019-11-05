@@ -2,8 +2,8 @@
 // Created by Zhi Yan Liu on 2019-05-20.
 //
 
-#ifndef IROOTECH_DMP_RP_AGENT_JOB_PARSER_H_
-#define IROOTECH_DMP_RP_AGENT_JOB_PARSER_H_
+#ifndef NIGHTSWATCH_RANGER_JOB_PARSER_H_
+#define NIGHTSWATCH_RANGER_JOB_PARSER_H_
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -56,4 +56,4 @@ void job_parser_job_free(pjob pj);
  * Job_Parse_Error_t job_parser_xxx(pjob pj);
  */
 
-#endif //IROOTECH_DMP_RP_AGENT_JOB_PARSER_H_
+#endif // NIGHTSWATCH_RANGER_JOB_PARSER_H_

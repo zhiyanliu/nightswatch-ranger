@@ -13,9 +13,9 @@ AR ?= ar
 DEBUG = @
 
 SDK_NAME = awsiot
-APP_NAME = dmpagent
-APP_ENTRY = agent
-LAUNCHER_RUND_NAME = dmprund
+APP_NAME = nightswatch-ranger
+APP_ENTRY = ranger
+LAUNCHER_RUND_NAME = nightswatch-rund
 LAUNCHER_RUND_ENTRY = rund
 
 APP_DIR = .
@@ -88,7 +88,7 @@ MAKE_APP_CMD = $(CC) $(APP_SRC_FILES) $(APP_COMPILER_FLAGS) -o $(APP_NAME) $(LD_
 LAUNCHER_RUND_SRC_FILES += $(shell find $(APP_DIR) -name "*.c" -not -path "./aws-iot-device-sdk-embedded-C/*" -not -iname "agent_main.c")
 LAUNCHER_RUND_LD_FLAG += -Wl,-rpath,$(TLS_LIB_DIR)
 LAUNCHER_RUND_LD_FLAG += -lpthread -l$(SDK_NAME) -lmbedtls -lmbedx509 -lmbedcrypto -lcrypto -lcurl
-LAUNCHER_RUND_COMPILER_FLAGS += $(COMPILER_FLAGS) -DIROOTECH_DMP_RP_AGENT_APPS_DIR=\".\"
+LAUNCHER_RUND_COMPILER_FLAGS += $(COMPILER_FLAGS) -DNIGHTSWATCH_RANGER_APPS_DIR=\".\"
 MAKE_LAUNCHER_RUND_CMD = $(CC) $(LAUNCHER_RUND_SRC_FILES) $(LAUNCHER_RUND_COMPILER_FLAGS) -o $(LAUNCHER_RUND_NAME) $(LD_FLAG) $(LAUNCHER_RUND_LD_FLAG) $(EXTERNAL_LIBS) $(AWSIOT_SDK) $(INCLUDE_ALL_DIRS)
 
 default: all

@@ -28,8 +28,8 @@ int app_run(char *app_home_path_v, char *app_process_pid_path_v, char *app_name)
     FILE *fp;
 
     jsmn_parser json_spec_parser, json_process_parser;
-    jsmntok_t json_spec_tok_v[IROOTECH_DMP_RP_RUND_APP_SPEC_MAX], *tok_app_process,
-        json_process_tok_v[IROOTECH_DMP_RP_RUND_APP_PROCESS_MAX], *tok_app_args;
+    jsmntok_t json_spec_tok_v[NIGHTSWATCH_RANGER_RUND_APP_SPEC_MAX], *tok_app_process,
+        json_process_tok_v[NIGHTSWATCH_RANGER_RUND_APP_PROCESS_MAX], *tok_app_args;
     int32_t token_c;
 
     rc = app_root_path(app_root_path_v, PATH_MAX + 1, app_name);
@@ -53,7 +53,8 @@ int app_run(char *app_home_path_v, char *app_process_pid_path_v, char *app_name)
 
     // application spec
     jsmn_init(&json_spec_parser);
-    token_c = jsmn_parse(&json_spec_parser, app_spec, app_spec_l, json_spec_tok_v, IROOTECH_DMP_RP_RUND_APP_SPEC_MAX);
+    token_c = jsmn_parse(&json_spec_parser, app_spec, app_spec_l, json_spec_tok_v,
+            NIGHTSWATCH_RANGER_RUND_APP_SPEC_MAX);
     if(token_c < 0) {
         IOT_ERROR("failed to parse application spec json: %d", token_c);
         rc = token_c;
@@ -71,7 +72,7 @@ int app_run(char *app_home_path_v, char *app_process_pid_path_v, char *app_name)
     jsmn_init(&json_process_parser);
     token_c = jsmn_parse(&json_process_parser, app_spec + tok_app_process->start,
             tok_app_process->end - tok_app_process->start,
-            json_process_tok_v, IROOTECH_DMP_RP_RUND_APP_PROCESS_MAX);
+            json_process_tok_v, NIGHTSWATCH_RANGER_RUND_APP_PROCESS_MAX);
     if (token_c < 0) {
         IOT_ERROR("failed to parse application process json: %d", token_c);
         rc = token_c;

@@ -94,9 +94,9 @@ static int step1_check_app_deployed(pjob_dispatch_param pparam, char *app_name, 
 
     if (use_container)
         // using runc by default
-        *launcher_type = IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUNC;
+        *launcher_type = NIGHTSWATCH_RANGER_APP_LAUNCHER_TYPE_RUNC;
     else
-        *launcher_type = IROOTECH_DMP_RP_AGENT_APP_LAUNCHER_TYPE_RUND;
+        *launcher_type = NIGHTSWATCH_RANGER_APP_LAUNCHER_TYPE_RUND;
 
     rc = app_exists(app_name, *launcher_type);
     if (0 == rc) {
@@ -113,17 +113,17 @@ int op_destroy_app_pkg_entry(pjob_dispatch_param pparam) {
 
     rc = step1_check_app_deployed(pparam, app_name, PATH_MAX + 1, &launcher_type);
     if (1 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Application was not deployed on this device yet.\"}");
         return 1;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Destroying application process.\"}");
 
     rc = app_destroy(app_name, launcher_type);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to destroy application process.\"}");
         return rc;
     }
@@ -136,7 +136,7 @@ int op_destroy_app_pkg_entry(pjob_dispatch_param pparam) {
         IOT_DEBUG("application %s (launcher-type=%d) is unregistered from local store", app_name, launcher_type);
     }
 
-    rc = dmp_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    rc = nw_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Application destroyed.\"}");
     if (SUCCESS != rc) {
         IOT_ERROR("failed to set application destroy job status to SUCCEEDED, "

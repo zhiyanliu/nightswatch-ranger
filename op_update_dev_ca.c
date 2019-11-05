@@ -197,7 +197,7 @@ static int step5_restart_agent(pjob_dispatch_param pparam, char *alter_par_name)
     getcwd(work_dir_path, PATH_MAX + 1);
 
     snprintf(agent_path, PATH_MAX + 1, "%s/%s/%s",
-            work_dir_path, IROOTECH_DMP_RP_AGENT_HOME_DIR, IROOTECH_DMP_RP_AGENT_AGENT_TARGET_CURRENT);
+            work_dir_path, NIGHTSWATCH_RANGER_HOME_DIR, NIGHTSWATCH_RANGER_TARGET_CURRENT);
 
     IOT_INFO("restarting the agent, switch to using new certs");
 
@@ -218,44 +218,44 @@ int op_update_dev_ca_entry(pjob_dispatch_param pparam) {
 
     // TODO(production): check free disk space, reject the operate if needed.
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Downloading new certs package to update.\"}");
 
     rc = step1_download_pkg_file(pparam, alter_par_path, PATH_MAX + 1, alter_certs_pkg_file_path, PATH_MAX + 1,
             pkg_md5_dst, MD5_SUM_LENGTH + 1);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to downloading new certs package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Verifying the md5 of new certs package.\"}");
 
     rc = step2_verify_pkg_md5sum(pparam, alter_certs_pkg_file_path, PATH_MAX + 1,
             pkg_md5_src, pkg_md5_dst, MD5_SUM_LENGTH + 1);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to verify the md5 of new certs package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Extracting new certs package.\"}");
 
     rc = step3_unzip_pkg_file(pparam, alter_par_path, alter_certs_pkg_file_path);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to extract new certs package.\"}");
         return rc;
     }
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Configure device to use new certs.\"}");
 
     rc = step4_switch_certs_par(pparam, alter_par_name, PATH_MAX + 1);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to switch to using new certs.\"}");
         return rc;
     }
@@ -270,12 +270,12 @@ int op_update_dev_ca_entry(pjob_dispatch_param pparam) {
 
     // TODO(production): close other resources, e.g. opened fd.
 
-    dmp_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_wip(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"Restarting device agent to apply new certs.\"}");
 
     rc = step5_restart_agent(pparam, alter_par_name);
     if (0 != rc) {
-        dmp_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+        nw_dev_client_job_failed(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
                 "{\"detail\":\"Failed to restart the agent.\"}");
         return rc;
     }

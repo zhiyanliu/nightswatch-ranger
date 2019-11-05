@@ -16,7 +16,7 @@ int op_ota_sys_pkg_entry(pjob_dispatch_param pparam) {
     // TODO: implement steps for system package OTA, e.g. download and apply package.
 
     // fake and test finish
-    dmp_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
+    nw_dev_client_job_done(pparam->paws_iot_client, pparam->thing_name, pparam->pj->job_id,
             "{\"detail\":\"system ota is complete successfully.\"}");
 
     return 0;
