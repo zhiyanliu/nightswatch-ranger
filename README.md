@@ -213,5 +213,5 @@ Same reason as above one. Any `No such file or directory` issue but the file you
 
 ## Contributor
 
-* Zhi Yan Liu, AWS Rapid Prototyping,  [liuzhiya@amazon.com](mailto:liuzhiya@amazon.com)
+* Zhi Yan Liu, AWS Rapid Prototyping team,  [liuzhiya@amazon.com](mailto:liuzhiya@amazon.com)
 * You. Welcome any feedback and issue report, further more, idea and code contribution are highly encouraged.
