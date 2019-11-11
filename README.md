@@ -1,6 +1,6 @@
 ## What is this
 
-This is the code repository of an IoT device [OTA](https://en.wikipedia.org/wiki/Over-the-air_programming) agent running on the AWS IoT Core service managed device, developed by AWS Rapid Prototyping team. The code name of this agent component is [Night's Watch](https://gameofthrones.fandom.com/wiki/Night%27s_Watch) - [Ranger](https://gameofthrones.fandom.com/wiki/Ranger), which is the part of Night's Watch project. 
+This is the code repository of an IoT device [OTA](https://en.wikipedia.org/wiki/Over-the-air_programming) agent running on the AWS IoT Core service managed device, developed by AWS Rapid Prototyping team. The code name of this component is [Night's Watch](https://gameofthrones.fandom.com/wiki/Night%27s_Watch) - [Ranger](https://gameofthrones.fandom.com/wiki/Ranger), which is the part of Night's Watch project.
 
 Mainly, and [currently](http://git.awsrun.com/rp/nightswatch-ranger/blob/master/job_op_types.c), Night's Watch - Ranger provides three functions:
 
