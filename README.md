@@ -2,11 +2,11 @@
 
 This is the code repository of an IoT device [OTA](https://en.wikipedia.org/wiki/Over-the-air_programming) agent running on the AWS IoT Core service managed device, developed by AWS Rapid Prototyping team. The code name of this agent component is [Night's Watch](https://gameofthrones.fandom.com/wiki/Night%27s_Watch) - [Ranger](https://gameofthrones.fandom.com/wiki/Ranger), which is the part of Night's Watch project. 
 
-Mainly, and currently, Night's Watch - Ranger provides three functions:
+Mainly, and [currently](http://git.awsrun.com/rp/nightswatch-ranger/blob/master/job_op_types.c), Night's Watch - Ranger provides three functions:
 
 1. Device certificates OTA.
 2. Agent itself OTA.
-3. Managed application OTA. Support containerized and non-containerized deployment, upgrade and destroy for user-defined application package.
+3. Managed application deployment and OTA. Support containerized and non-containerized deployment, upgrade and destroy for user-defined application package.
 
 ## Why [we](mailto:awscn-sa-prototyping@amazon.com) develop it
 
