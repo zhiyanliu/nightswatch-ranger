@@ -45,7 +45,7 @@ int func_router_home_path(char *func_router_home_path_v, size_t func_router_home
 }
 
 static int func_router_io_sock() {
-    int rc = 0, fd, flags;
+    int rc = 0, fd, flags, option = 1;
     struct sockaddr_in addr;
 
     fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -61,6 +61,8 @@ static int func_router_io_sock() {
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     addr.sin_port = htons(NIGHTSWATCH_RANGER_FUNC_ROUTER_IO_SOCK_PORT);
+
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 
     rc = bind(fd, (struct sockaddr*)&addr, sizeof(addr));
     if (-1 == rc) {
