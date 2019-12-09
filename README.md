@@ -80,7 +80,7 @@ As a C lang project, it needs Build tool and GCC toolchain to compile and link t
 
 ### Basic
 
-1. ``git clone git@git.awsrun.com:rp/nightswatch-ranger.git``
+1. ``git clone git@git.awsrun.com:rp/nightswatch-ranger.git`` or ``git clone http://git.awsrun.com/rp/nightswatch-ranger.git``
 2. ``cd nightswatch-ranger``
 3. ``source <QuecOpen Linux SDK>/ql-ol-crosstool/ql-ol-crosstool-env-init``, do this for cross compiling for QuecOpen Linux platform only, and execute this for each new session, environment varibables are exported and dedicated.
 4. ``make``, `nightswatch-ranger` and `nightswatch-rund` binaries are built out to current directory if build process is executed successfully.
