@@ -122,6 +122,10 @@ Build supports follow 7 targets currently, e.g. you can execute `make libawsiot.
 ├── [drwxr-xr-x]  certs
 │   ├── [lrwxrwxrwx]  latest -> ./p1
 │   ├── [drwxr-xr-x]  p1
+│   │   ├── [-rw-r--r--]  cert.pem
+│   │   ├── [-rw-r--r--]  private.key
+│   │   ├── [-rw-r--r--]  public.key
+│   │   └── [-rw-r--r--]  root-ca.crt
 │   └── [drwxr-xr-x]  p2
 └── [drwxrwxr-x]  funcs
     └── [drwxrwxr-x]  router
