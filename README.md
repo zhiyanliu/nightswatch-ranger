@@ -2,21 +2,21 @@
 
 This is the code repository of an IoT device [OTA](https://en.wikipedia.org/wiki/Over-the-air_programming) agent running on the AWS IoT Core service managed device. The code name of this component is [Night's Watch](https://gameofthrones.fandom.com/wiki/Night%27s_Watch) - [Ranger](https://gameofthrones.fandom.com/wiki/Ranger), which is the part of Night's Watch project.
 
-Mainly, and [currently](http://git.awsrun.com/rp/nightswatch-ranger/blob/master/job_op_types.c), Night's Watch - Ranger provides three functions:
+Mainly, and [currently](https://github.com/zhiyanliu/nightswatch-ranger/blob/master/job_op_types.c), Night's Watch - Ranger provides three functions:
 
 1. Device certificates OTA.
 2. Agent itself OTA.
 3. Managed application deployment and OTA. Support containerized and non-containerized deployment, upgrade and destroy for user-defined application package.
 
-## Why [we](mailto:awscn-sa-prototyping@amazon.com) develop it
+## Why develop it
 
-AWS IoT Core service provides a set of great features, as the fundamental and necessary mechanism customer can easily build own business logic base on it. However beside the core and basic part, some common and high level paradigm is missing and need to be developed by the customer, again and again, device OTA just is the one which we realized in prototyping daily works.
+AWS IoT Core service provides a set of great features, as the fundamental and necessary mechanism customer can easily build own business logic base on it. However beside the core and basic part, some common and high level paradigm is missing and need to be developed by the customer, again and again, device OTA just is the one which I realized in prototyping daily works.
 
-To prevent our SA and customer to re-develop this kind of OTA agent for AWS IoT Core managed device again, we polished our OTA project to make it as general as possible for common usage, to accelerate the PoC, prototyping case and AWS IoT related service delivery.
+To prevent our SA and customer to re-develop this kind of OTA agent for AWS IoT Core managed device again, I polished my OTA project to make it as general as possible for common usage, to accelerate the PoC, prototyping case and AWS IoT related service delivery.
 
 >> **Note:**
 >>
->> This project is truly under continuative develop stage, we'd like to collect the feedback and include the enhancement in follow-up release to share them with all users. 
+>> This project is truly under continuative develop stage, I'd like to collect the feedback and include the enhancement in follow-up release to share them with all users. 
 >>
 >> **DISCLAIMER: This project is NOT intended for a production environment, and USE AT OWN RISK!**  
 
@@ -80,7 +80,7 @@ As a C lang project, it needs Build tool and GCC toolchain to compile and link t
 
 ### Basic
 
-1. ``git clone git@git.awsrun.com:rp/nightswatch-ranger.git`` or ``git clone http://git.awsrun.com/rp/nightswatch-ranger.git``
+1. ``git clone git@github.com:zhiyanliu/nightswatch-ranger.git`` or ``git clone https://github.com/zhiyanliu/nightswatch-ranger.git``
 2. ``cd nightswatch-ranger``
 3. ``source <QuecOpen Linux SDK>/ql-ol-crosstool/ql-ol-crosstool-env-init``, do this for cross compiling for QuecOpen Linux platform only, and execute this for each new session, environment varibables are exported and dedicated.
 4. ``make``, `nightswatch-ranger` and `nightswatch-rund` binaries are built out to current directory if build process is executed successfully.
@@ -156,7 +156,7 @@ The complete configurations are listed in `aws_iot_config.h` file. You need to t
 
 >>**Note:**
 >>
->>You need to finish this configuration before to build the project, due to currently we use [`#define` preprocessor directive](https://www.techonthenet.com/c_language/constants/create_define.php) to provide this kind of config value. It means the configuration will be built into the binary statically and can not be changed durning runtime.
+>>You need to finish this configuration before to build the project, due to currently I use [`#define` preprocessor directive](https://www.techonthenet.com/c_language/constants/create_define.php) to provide this kind of config value. It means the configuration will be built into the binary statically and can not be changed durning runtime.
 
 - `AWS_IOT_MQTT_HOST`: the customer specific MQTT HOST. The same will be used for Thing Shadow.
 - `AWS_IOT_MQTT_CLIENT_ID`: the MQTT client ID should be unique for every device.
